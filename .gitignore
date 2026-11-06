@@ -61,3 +61,6 @@ app.*.map.json
 
 # CI 本地复现用的临时物
 .ci-tmp/
+
+# 改 pbxproj 时留下的备份, 不该进仓库
+*.bak
