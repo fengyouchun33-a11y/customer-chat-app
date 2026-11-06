@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "897624609093",
+    "project_id": "support-6ea1b",
+    "storage_bucket": "support-6ea1b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:897624609093:android:027cc6310332719ccaae2c",
+        "android_client_info": {
+          "package_name": "com.reflex.customer.service"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBX3SWJOtXfW3vLNLgnyqINKSOLJX4lhjs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

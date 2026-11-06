@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Used by: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+     Pairs with the Manual signing settings in the Runner target's Release config.
+     The certificate comes from the p12 imported into the CI keychain; the profile is
+     matched by Name (com.reflex.customer.service) instead of letting Xcode pick one.
+     Contains no secrets, so it is safe to keep in the repository. -->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store</string>
+	<key>teamID</key>
+	<string>938AV8Q6X9</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>compileBitcode</key>
+	<false/>
+	<key>destination</key>
+	<string>export</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.reflex.customer.service</key>
+		<string>com.reflex.customer.service</string>
+	</dict>
+</dict>
+</plist>
