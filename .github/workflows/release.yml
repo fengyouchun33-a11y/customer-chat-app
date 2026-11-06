@@ -61,8 +61,10 @@ jobs:
           if-no-files-found: error
 
   ios:
-    # iOS 归档只能在有 Xcode 的 macOS 机器上做，这就是本地打不了 ipa 的原因
-    runs-on: macos-14
+    # iOS 归档只能在有 Xcode 的 macOS 机器上做，这就是本地打不了 ipa 的原因。
+    # 用 macos-15 而不是 macos-14：macOS 14 镜像已于 2026-11-02 退役，
+    # 继续用 macos-14 会被判为不支持的配置，job 分配不到 runner 就秒取消。
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
