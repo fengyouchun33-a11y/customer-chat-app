@@ -9,7 +9,7 @@ private let kTokenDefaultsKey = "keiyo.apns.deviceToken"
 private let kTapDefaultsKey = "keiyo.apns.pendingTap"
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, UNUserNotificationCenterDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var pushChannel: FlutterMethodChannel?
 
   override func application(
@@ -84,7 +84,10 @@ private let kTapDefaultsKey = "keiyo.apns.pendingTap"
 
   // MARK: - 通知展示与点击
 
-  func userNotificationCenter(
+  // FlutterAppDelegate 自身已遵从 UNUserNotificationCenterDelegate（把回调转发给插件），
+  // 所以这两个回调必须写 override、类声明里不能再重复列协议（会报冗余遵从）。
+  // 本类接管路由后不调 super：completionHandler 必须且只能调一次，由这里负责。
+  override func userNotificationCenter(
     _ center: UNUserNotificationCenter,
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
@@ -111,7 +114,7 @@ private let kTapDefaultsKey = "keiyo.apns.pendingTap"
     completionHandler(options)
   }
 
-  func userNotificationCenter(
+  override func userNotificationCenter(
     _ center: UNUserNotificationCenter,
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void
@@ -123,9 +126,8 @@ private let kTapDefaultsKey = "keiyo.apns.pendingTap"
     } else if let payload = userInfo["payload"] as? String,
               let data = payload.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-      // flutter_local_notifications 把会话 JSON 放在 userInfo["payload"]。它自己的点击
-      // 转发要靠 FlutterAppDelegate 转发给插件，而那份实现没暴露在头文件里、Swift 调不到
-      // super，所以这里按同一份约定取出来，和远程推送共用一个入口。
+      // flutter_local_notifications 把会话 JSON 放在 userInfo["payload"]，这里按同一份
+      // 约定取出来，和远程推送共用一个入口；插件的点击转发不再经过（见上方 override 说明）。
       deliverTap(json)
     }
     completionHandler()
