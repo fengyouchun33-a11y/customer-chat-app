@@ -27,13 +27,16 @@ const Map<String, String> frStrings = {
   'selectTenantTitle': 'Choisir un locataire',
   'searchTenantHint': 'Rechercher le nom ou l\'ID du locataire',
   'platformAdmin': '{0} · Administrateur de plateforme',
-  'tenantSelectHint': 'Les conversations et les statistiques sont filtrées par locataire. Choisissez celui à ouvrir.',
+  'tenantSelectHint':
+      'Les conversations et les statistiques sont filtrées par locataire. Choisissez celui à ouvrir.',
   'tenantLoadFailed': 'Échec du chargement des locataires',
   'noTenants': 'Aucun locataire disponible',
   'noMatchingTenants': 'Aucun locataire correspondant',
-  'noTenantsHint': 'Créez d\'abord un locataire dans la console d\'administration',
+  'noTenantsHint':
+      'Créez d\'abord un locataire dans la console d\'administration',
   'tryAnotherKeyword': 'Essayez un autre mot-clé',
-  'tenantSwitchHint': 'Après changement de locataire, les conversations et les statistiques sont rechargées pour le nouveau locataire',
+  'tenantSwitchHint':
+      'Après changement de locataire, les conversations et les statistiques sont rechargées pour le nouveau locataire',
   'tenantFallback': 'Locataire n° {0}',
   'currentTenant': 'Locataire actuel',
   'tenantIdLabel': 'ID {0}',
@@ -77,19 +80,23 @@ const Map<String, String> frStrings = {
   'projectFallback': 'Projet n° {0}',
 
   // Liste des conversations
-  'onlineOnToast': 'En ligne. Les nouvelles conversations vous seront attribuées en priorité',
-  'onlineOffToast': 'Hors ligne. Aucune nouvelle conversation ne sera attribuée (celles déjà prises en charge ne sont pas affectées)',
+  'onlineOnToast':
+      'En ligne. Les nouvelles conversations vous seront attribuées en priorité',
+  'onlineOffToast':
+      'Hors ligne. Aucune nouvelle conversation ne sera attribuée (celles déjà prises en charge ne sont pas affectées)',
   'switching': 'Changement en cours',
   'online': 'En ligne',
   'offline': 'Hors ligne',
   'conversationQueue': 'File des conversations',
   'totalCount': '{0} au total',
   'resetFilters': 'Réinitialiser les filtres',
-  'searchConversationHint': 'Rechercher le titre de la conversation / le visiteur',
+  'searchConversationHint':
+      'Rechercher le titre de la conversation / le visiteur',
   'clear': 'Effacer',
   'conversationLoadFailed': 'Échec du chargement des conversations',
   'noConversations': 'Aucune conversation',
-  'noConversationsHint': 'Modifiez les filtres ou attendez un nouveau message d\'un visiteur',
+  'noConversationsHint':
+      'Modifiez les filtres ou attendez un nouveau message d\'un visiteur',
   'loadMore': 'Charger plus ({0}/{1})',
   'allLoaded': 'Les {0} conversations sont chargées',
   'agentLabel': 'Agent {0}',
@@ -106,7 +113,8 @@ const Map<String, String> frStrings = {
   'imagePlaceholder': '[Image]',
   'imageLoadFailed': 'Échec du chargement de l\'image',
   'closeConversation': 'Fermer la conversation',
-  'closeConversationBody': 'La fermeture met fin à la conversation actuelle du visiteur ; une réponse ultérieure la rouvrira automatiquement.',
+  'closeConversationBody':
+      'La fermeture met fin à la conversation actuelle du visiteur ; une réponse ultérieure la rouvrira automatiquement.',
   'conversationClosed': 'Conversation fermée',
   'conversationReopened': 'Conversation rouverte',
   'historyForms': 'Historique des formulaires ({0})',
@@ -125,7 +133,8 @@ const Map<String, String> frStrings = {
   'formSubmitNo': 'Envoi n° {0}',
   'formParseFailed': '(Impossible d\'analyser le contenu du formulaire)',
   'openLinkFailed': 'Impossible d\'ouvrir le lien : {0}',
-  'closedBarHint': 'Conversation fermée. L\'envoi d\'un message la rouvrira automatiquement',
+  'closedBarHint':
+      'Conversation fermée. L\'envoi d\'un message la rouvrira automatiquement',
   'replyHint': 'Saisissez une réponse…',
 
   // Statistiques
@@ -142,50 +151,64 @@ const Map<String, String> frStrings = {
   'kpiKbSub': '{0} recherches, {1} correspondances',
   'kpiKbEmpty': 'Aucune recherche sur cette période',
   'chartConvTitle': 'Conversations et réponses de l\'IA par jour',
-  'chartConvTip': 'Les jours sans données sont complétés par 0 pour que la courbe ne relie pas deux jours directement',
+  'chartConvTip':
+      'Les jours sans données sont complétés par 0 pour que la courbe ne relie pas deux jours directement',
   'legendNewConv': 'Nouvelles conversations',
   'legendAiAnswer': 'Réponses de l\'IA',
   'chartHumanTitle': 'Conversations traitées par des agents par jour',
-  'chartHumanTip': 'Le traitement humain compte les conversations uniques avec des messages d\'agent ce jour-là',
+  'chartHumanTip':
+      'Le traitement humain compte les conversations uniques avec des messages d\'agent ce jour-là',
   'legendHumanConv': 'Traitement humain',
   'legendTransfer': 'Demandes de transfert',
   'legendHuman': 'Traitement humain',
   'legendTransferShort': 'Transfert',
-  'chartKbTitle': 'Recherches et correspondances de la base de connaissances par jour',
-  'chartKbTip': 'L\'IA effectue une recherche par réponse ; les échecs comptent aussi comme recherches',
+  'chartKbTitle':
+      'Recherches et correspondances de la base de connaissances par jour',
+  'chartKbTip':
+      'L\'IA effectue une recherche par réponse ; les échecs comptent aussi comme recherches',
   'legendKbSearch': 'Recherches',
   'legendKbHit': 'Correspondances',
   'noDataInRange': 'Aucune donnée sur cette période',
   'tooltipSearch': 'Recherche',
   'tooltipHit': 'Correspondance',
   'keywordsTitle': 'Mots-clés / sujets populaires',
-  'keywordsTip': 'L\'IA résume périodiquement les sujets des questions des visiteurs',
-  'keywordsEmpty': 'Aucune question de visiteur exploitable pour les statistiques sur cette période',
+  'keywordsTip':
+      'L\'IA résume périodiquement les sujets des questions des visiteurs',
+  'keywordsEmpty':
+      'Aucune question de visiteur exploitable pour les statistiques sur cette période',
   'topKbTitle': 'Entrées de connaissances les plus citées',
   'topKbTip': 'Triées par correspondances de recherche de l\'IA',
-  'topKbEmpty': 'Aucune correspondance de la base de connaissances sur cette période',
+  'topKbEmpty':
+      'Aucune correspondance de la base de connaissances sur cette période',
   'summaryTitle': 'Résumé des sujets par l\'IA',
-  'summaryTip': 'Résumer les questions des visiteurs de cette période en quelques points clés',
+  'summaryTip':
+      'Résumer les questions des visiteurs de cette période en quelques points clés',
   'genSummary': 'Générer un résumé IA',
   'summaryMeta': 'Modèle {0} · généré le {1}',
-  'summaryLoading': 'Résumé en cours, veuillez patienter (une dizaine de secondes)…',
-  'summaryEmpty': 'Aucun résumé généré pour l\'instant. Appuyez sur le bouton en haut à droite pour que l\'IA résume les questions des visiteurs de cette période en points clés.',
-  'summaryNote': 'Le résumé appelle le modèle en direct, prend une dizaine de secondes et consomme des tokens.',
+  'summaryLoading':
+      'Résumé en cours, veuillez patienter (une dizaine de secondes)…',
+  'summaryEmpty':
+      'Aucun résumé généré pour l\'instant. Appuyez sur le bouton en haut à droite pour que l\'IA résume les questions des visiteurs de cette période en points clés.',
+  'summaryNote':
+      'Le résumé appelle le modèle en direct, prend une dizaine de secondes et consomme des tokens.',
 
   // Erreurs
   'sessionExpired': 'Session expirée, reconnectez-vous',
   'requestFailed': 'Échec de la requête',
   'networkTimeout': 'Délai réseau dépassé, réessayez plus tard',
-  'cannotConnect': 'Impossible de se connecter au serveur, vérifiez votre réseau',
+  'cannotConnect':
+      'Impossible de se connecter au serveur, vérifiez votre réseau',
   'httpError': 'Le serveur a renvoyé une erreur (HTTP {0})',
   'networkError': 'Erreur réseau',
 
   // Notifications
   'notifChannelName': 'Messages des visiteurs',
   'notifChannelSilentName': 'Messages des visiteurs (silencieux)',
-  'notifChannelDesc': 'Alerter à l\'arrivée d\'un nouveau message d\'un visiteur',
+  'notifChannelDesc':
+      'Alerter à l\'arrivée d\'un nouveau message d\'un visiteur',
   'fgChannelName': 'Support intelligent en ligne',
-  'fgChannelDesc': 'Maintenir la connexion pour recevoir les messages des visiteurs',
+  'fgChannelDesc':
+      'Maintenir la connexion pour recevoir les messages des visiteurs',
   'fgNotificationText': 'Réception des messages des visiteurs en arrière-plan',
   'visitor': 'Visiteur',
   'unreadMessages': '{0} messages non lus',
@@ -193,4 +216,14 @@ const Map<String, String> frStrings = {
 
   // Divers
   'yesterday': 'Hier {0}',
+
+  // Entrées de connexion
+  'loginIntroEntry': 'Présentation de la plateforme',
+  'loginRegisterEntry': 'Inscription entreprise',
+  'introBody':
+      'Une plateforme de support client complète, du back-office web à l\'app mobile\n\n· Réception multicanal : les demandes des clients venant du site web, de l\'app et des mini-programmes sont réunies dans un seul espace de travail\n· Back-office entreprise : après inscription, configurez les règles de réception, les équipes d\'agents et la base de connaissances dans le back-office web\n· Service mobile : les conversations sont poussées en temps réel sur le téléphone ; même en déplacement, vous pouvez prendre le relais, attribuer et répondre\n· Tableau de bord : volume de conversations, temps de première réponse et tendances de satisfaction en un coup d\'œil\n· Disponible partout : 11 langues suivent automatiquement le système, pour les équipes internationales\n\nComment démarrer : ouvrez d\'abord support.breathmeters.net dans un navigateur sur PC pour enregistrer votre entreprise et configurer le back-office, puis connectez-vous à cette app avec le même compte entreprise pour assurer le service.',
+  'registerBody':
+      'L\'inscription d\'une entreprise doit être effectuée dans le navigateur d\'un PC.\nCopiez le lien ci-dessous et ouvrez-le sur un PC.\n\nL\'app mobile sert uniquement à se connecter avec un compte entreprise déjà enregistré.',
+  'copyLink': 'Copier le lien',
+  'linkCopied': 'Lien copié',
 };

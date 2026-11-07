@@ -116,11 +116,14 @@ class AppStrings {
     if (pref == null || pref.isEmpty || pref == systemPref) {
       return codeOf(WidgetsBinding.instance.platformDispatcher.locale);
     }
-    return _all.containsKey(pref) ? pref : codeOf(WidgetsBinding.instance.platformDispatcher.locale);
+    return _all.containsKey(pref)
+        ? pref
+        : codeOf(WidgetsBinding.instance.platformDispatcher.locale);
   }
 
   /// MaterialApp 的系统语言解析回调：按语言匹配，并处理 zh 的简繁之分。
-  static Locale? resolveSystemLocales(List<Locale>? locales, Iterable<Locale> supported) {
+  static Locale? resolveSystemLocales(
+      List<Locale>? locales, Iterable<Locale> supported) {
     if (locales == null || locales.isEmpty) return null;
     return localeOf(codeOf(locales.first));
   }
@@ -158,6 +161,12 @@ class AppStrings {
   String get loginButton => _t('loginButton');
   String get loginEmptyError => _t('loginEmptyError');
   String get loginTokenMissing => _t('loginTokenMissing');
+  String get loginIntroEntry => _t('loginIntroEntry');
+  String get loginRegisterEntry => _t('loginRegisterEntry');
+  String get introBody => _t('introBody');
+  String get registerBody => _t('registerBody');
+  String get copyLink => _t('copyLink');
+  String get linkCopied => _t('linkCopied');
 
   // 租户
   String get selectTenantTitle => _t('selectTenantTitle');
@@ -223,7 +232,8 @@ class AppStrings {
   String get conversationLoadFailed => _t('conversationLoadFailed');
   String get noConversations => _t('noConversations');
   String get noConversationsHint => _t('noConversationsHint');
-  String loadMore(String loaded, String total) => _fmt('loadMore', [loaded, total]);
+  String loadMore(String loaded, String total) =>
+      _fmt('loadMore', [loaded, total]);
   String allLoaded(String n) => _fmt('allLoaded', [n]);
   String agentLabel(String name) => _fmt('agentLabel', [name]);
   String get unassigned => _t('unassigned');
@@ -265,15 +275,18 @@ class AppStrings {
   String get summaryUpdated => _t('summaryUpdated');
   String daysRange(String n) => _fmt('daysRange', [n]);
   String get kpiConversations => _t('kpiConversations');
-  String kpiConversationsSub(String days) => _fmt('kpiConversationsSub', [days]);
+  String kpiConversationsSub(String days) =>
+      _fmt('kpiConversationsSub', [days]);
   String get kpiAiAnswers => _t('kpiAiAnswers');
   String kpiAiSub(String avg) => _fmt('kpiAiSub', [avg]);
   String get kpiHuman => _t('kpiHuman');
   String kpiHumanSubWithRate(String rate, String transfers) =>
       _fmt('kpiHumanSubWithRate', [rate, transfers]);
-  String kpiHumanSubNoRate(String transfers) => _fmt('kpiHumanSubNoRate', [transfers]);
+  String kpiHumanSubNoRate(String transfers) =>
+      _fmt('kpiHumanSubNoRate', [transfers]);
   String get kpiKb => _t('kpiKb');
-  String kpiKbSub(String searches, String hits) => _fmt('kpiKbSub', [searches, hits]);
+  String kpiKbSub(String searches, String hits) =>
+      _fmt('kpiKbSub', [searches, hits]);
   String get kpiKbEmpty => _t('kpiKbEmpty');
   String get chartConvTitle => _t('chartConvTitle');
   String get chartConvTip => _t('chartConvTip');
@@ -301,7 +314,8 @@ class AppStrings {
   String get summaryTitle => _t('summaryTitle');
   String get summaryTip => _t('summaryTip');
   String get genSummary => _t('genSummary');
-  String summaryMeta(String model, String time) => _fmt('summaryMeta', [model, time]);
+  String summaryMeta(String model, String time) =>
+      _fmt('summaryMeta', [model, time]);
   String get summaryLoading => _t('summaryLoading');
   String get summaryEmpty => _t('summaryEmpty');
   String get summaryNote => _t('summaryNote');

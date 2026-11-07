@@ -27,13 +27,15 @@ const Map<String, String> esStrings = {
   'selectTenantTitle': 'Seleccionar inquilino',
   'searchTenantHint': 'Buscar nombre o ID del inquilino',
   'platformAdmin': '{0} · Administrador de plataforma',
-  'tenantSelectHint': 'Las conversaciones y estadísticas se filtran por inquilino. Elige el inquilino al que entrar.',
+  'tenantSelectHint':
+      'Las conversaciones y estadísticas se filtran por inquilino. Elige el inquilino al que entrar.',
   'tenantLoadFailed': 'Error al cargar los inquilinos',
   'noTenants': 'No hay inquilinos disponibles',
   'noMatchingTenants': 'Ningún inquilino coincide',
   'noTenantsHint': 'Crea primero un inquilino en la consola de administración',
   'tryAnotherKeyword': 'Prueba otra palabra clave',
-  'tenantSwitchHint': 'Al cambiar de inquilino, las conversaciones y estadísticas se recargan para el nuevo inquilino',
+  'tenantSwitchHint':
+      'Al cambiar de inquilino, las conversaciones y estadísticas se recargan para el nuevo inquilino',
   'tenantFallback': 'Inquilino n.º {0}',
   'currentTenant': 'Inquilino actual',
   'tenantIdLabel': 'ID {0}',
@@ -77,8 +79,10 @@ const Map<String, String> esStrings = {
   'projectFallback': 'Proyecto n.º {0}',
 
   // Lista de conversaciones
-  'onlineOnToast': 'En línea. Las nuevas conversaciones se te asignarán primero',
-  'onlineOffToast': 'Sin conexión. No se asignarán conversaciones nuevas (las ya atendidas no se ven afectadas)',
+  'onlineOnToast':
+      'En línea. Las nuevas conversaciones se te asignarán primero',
+  'onlineOffToast':
+      'Sin conexión. No se asignarán conversaciones nuevas (las ya atendidas no se ven afectadas)',
   'switching': 'Cambiando',
   'online': 'En línea',
   'offline': 'Sin conexión',
@@ -89,7 +93,8 @@ const Map<String, String> esStrings = {
   'clear': 'Borrar',
   'conversationLoadFailed': 'Error al cargar las conversaciones',
   'noConversations': 'No hay conversaciones',
-  'noConversationsHint': 'Cambia los filtros o espera un nuevo mensaje de un visitante',
+  'noConversationsHint':
+      'Cambia los filtros o espera un nuevo mensaje de un visitante',
   'loadMore': 'Cargar más ({0}/{1})',
   'allLoaded': 'Se han cargado todas ({0})',
   'agentLabel': 'Agente {0}',
@@ -106,7 +111,8 @@ const Map<String, String> esStrings = {
   'imagePlaceholder': '[Imagen]',
   'imageLoadFailed': 'No se pudo cargar la imagen',
   'closeConversation': 'Cerrar conversación',
-  'closeConversationBody': 'Al cerrar, finaliza la conversación actual del visitante; si respondes después, se reabrirá automáticamente.',
+  'closeConversationBody':
+      'Al cerrar, finaliza la conversación actual del visitante; si respondes después, se reabrirá automáticamente.',
   'conversationClosed': 'Conversación cerrada',
   'conversationReopened': 'Conversación reabierta',
   'historyForms': 'Historial de formularios ({0})',
@@ -125,7 +131,8 @@ const Map<String, String> esStrings = {
   'formSubmitNo': 'Envío n.º {0}',
   'formParseFailed': '(No se pudo interpretar el contenido del formulario)',
   'openLinkFailed': 'No se puede abrir el enlace: {0}',
-  'closedBarHint': 'Conversación cerrada. Al enviar un mensaje se reabrirá automáticamente',
+  'closedBarHint':
+      'Conversación cerrada. Al enviar un mensaje se reabrirá automáticamente',
   'replyHint': 'Escribe una respuesta…',
 
   // Estadísticas
@@ -142,35 +149,43 @@ const Map<String, String> esStrings = {
   'kpiKbSub': '{0} búsquedas, {1} aciertos',
   'kpiKbEmpty': 'No hay búsquedas en este periodo',
   'chartConvTitle': 'Conversaciones y respuestas de IA por día',
-  'chartConvTip': 'Los días sin datos se rellenan con 0 para que la línea no una dos días directamente',
+  'chartConvTip':
+      'Los días sin datos se rellenan con 0 para que la línea no una dos días directamente',
   'legendNewConv': 'Conversaciones nuevas',
   'legendAiAnswer': 'Respuestas de IA',
   'chartHumanTitle': 'Conversaciones atendidas por personas por día',
-  'chartHumanTip': 'La atención humana cuenta las conversaciones únicas con mensajes de agente ese día',
+  'chartHumanTip':
+      'La atención humana cuenta las conversaciones únicas con mensajes de agente ese día',
   'legendHumanConv': 'Atención humana',
   'legendTransfer': 'Solicitudes de derivación',
   'legendHuman': 'Atención humana',
   'legendTransferShort': 'Derivación',
   'chartKbTitle': 'Búsquedas y aciertos de la base de conocimiento por día',
-  'chartKbTip': 'La IA busca una vez por respuesta; los fallos también cuentan como búsquedas',
+  'chartKbTip':
+      'La IA busca una vez por respuesta; los fallos también cuentan como búsquedas',
   'legendKbSearch': 'Búsquedas',
   'legendKbHit': 'Aciertos',
   'noDataInRange': 'No hay datos en este periodo',
   'tooltipSearch': 'Búsqueda',
   'tooltipHit': 'Acierto',
   'keywordsTitle': 'Palabras clave / temas destacados',
-  'keywordsTip': 'La IA resume periódicamente los temas de las preguntas de los visitantes',
-  'keywordsEmpty': 'No hay preguntas de visitantes para estadísticas en este periodo',
+  'keywordsTip':
+      'La IA resume periódicamente los temas de las preguntas de los visitantes',
+  'keywordsEmpty':
+      'No hay preguntas de visitantes para estadísticas en este periodo',
   'topKbTitle': 'Entradas de conocimiento más citadas',
   'topKbTip': 'Ordenadas por aciertos de búsqueda de la IA',
   'topKbEmpty': 'No hay aciertos de la base de conocimiento en este periodo',
   'summaryTitle': 'Resumen de temas de IA',
-  'summaryTip': 'Resume las preguntas de los visitantes de este periodo en puntos clave',
+  'summaryTip':
+      'Resume las preguntas de los visitantes de este periodo en puntos clave',
   'genSummary': 'Generar resumen de IA',
   'summaryMeta': 'Modelo {0} · generado el {1}',
   'summaryLoading': 'Resumiendo, espera un momento (unos diez segundos)…',
-  'summaryEmpty': 'Aún no se ha generado ningún resumen. Pulsa el botón de arriba a la derecha para que la IA resuma las preguntas de los visitantes de este periodo en puntos clave.',
-  'summaryNote': 'El resumen llama al modelo en el momento, tarda unos diez segundos y consume tokens.',
+  'summaryEmpty':
+      'Aún no se ha generado ningún resumen. Pulsa el botón de arriba a la derecha para que la IA resuma las preguntas de los visitantes de este periodo en puntos clave.',
+  'summaryNote':
+      'El resumen llama al modelo en el momento, tarda unos diez segundos y consume tokens.',
 
   // Errores
   'sessionExpired': 'La sesión ha caducado, vuelve a iniciar sesión',
@@ -193,4 +208,14 @@ const Map<String, String> esStrings = {
 
   // Otros
   'yesterday': 'Ayer {0}',
+
+  // Entradas de inicio de sesión
+  'loginIntroEntry': 'Descripción de la plataforma',
+  'loginRegisterEntry': 'Registro de empresa',
+  'introBody':
+      'Un sistema de soporte completo, del panel web al móvil\n\n· Bandeja multicanal: las consultas de web, app y miniprogramas llegan a un solo puesto de trabajo\n· Panel de empresa: tras el registro, configura reglas de asignación, equipos de agentes y base de conocimiento en el panel web\n· Atención desde cualquier lugar: las conversaciones llegan al móvil en tiempo real para retomar, asignar y responder en movimiento\n· Datos claros: volumen de conversaciones, tiempo de primera respuesta y tendencias de satisfacción de un vistazo\n· Listo para equipos globales: 11 idiomas siguen automáticamente el sistema\n\nCómo empezar: abre support.breathmeters.net en el navegador de un PC para registrar la empresa y configurar el panel; después inicia sesión en esta app con la misma cuenta de empresa.',
+  'registerBody':
+      'El registro de empresa debe hacerse en el navegador de un PC.\nCopia el enlace y ábrelo en el navegador del PC.\n\nLa app móvil solo sirve para iniciar sesión con una cuenta de empresa registrada.',
+  'copyLink': 'Copiar enlace',
+  'linkCopied': 'Enlace copiado',
 };

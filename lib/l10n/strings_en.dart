@@ -27,13 +27,15 @@ const Map<String, String> enStrings = {
   'selectTenantTitle': 'Select tenant',
   'searchTenantHint': 'Search tenant name or ID',
   'platformAdmin': '{0} · Platform admin',
-  'tenantSelectHint': 'Conversations and stats are filtered by tenant. Select the tenant to enter.',
+  'tenantSelectHint':
+      'Conversations and stats are filtered by tenant. Select the tenant to enter.',
   'tenantLoadFailed': 'Failed to load tenants',
   'noTenants': 'No tenants available',
   'noMatchingTenants': 'No matching tenants',
   'noTenantsHint': 'Create a tenant in the admin console first',
   'tryAnotherKeyword': 'Try another keyword',
-  'tenantSwitchHint': 'Conversations and stats reload for the new tenant after switching',
+  'tenantSwitchHint':
+      'Conversations and stats reload for the new tenant after switching',
   'tenantFallback': 'Tenant #{0}',
   'currentTenant': 'Current tenant',
   'tenantIdLabel': 'ID {0}',
@@ -78,7 +80,8 @@ const Map<String, String> enStrings = {
 
   // Conversation list
   'onlineOnToast': 'Online. New conversations will be assigned to you first',
-  'onlineOffToast': 'Offline. No new conversations will be assigned (existing ones are unaffected)',
+  'onlineOffToast':
+      'Offline. No new conversations will be assigned (existing ones are unaffected)',
   'switching': 'Switching',
   'online': 'Online',
   'offline': 'Offline',
@@ -126,7 +129,8 @@ const Map<String, String> enStrings = {
   'formSubmitNo': 'Submission #{0}',
   'formParseFailed': '(Failed to parse form content)',
   'openLinkFailed': 'Cannot open link: {0}',
-  'closedBarHint': 'Conversation closed. Sending a message will reopen it automatically',
+  'closedBarHint':
+      'Conversation closed. Sending a message will reopen it automatically',
   'replyHint': 'Type a reply…',
 
   // Stats
@@ -143,11 +147,13 @@ const Map<String, String> enStrings = {
   'kpiKbSub': '{0} searches, {1} hits',
   'kpiKbEmpty': 'No searches in this range',
   'chartConvTitle': 'Daily conversations and AI answers',
-  'chartConvTip': 'Missing days are filled with 0 so the line does not connect two days directly',
+  'chartConvTip':
+      'Missing days are filled with 0 so the line does not connect two days directly',
   'legendNewConv': 'New conversations',
   'legendAiAnswer': 'AI answers',
   'chartHumanTitle': 'Daily human-handled conversations',
-  'chartHumanTip': 'Human-handled counts unique conversations with agent messages that day',
+  'chartHumanTip':
+      'Human-handled counts unique conversations with agent messages that day',
   'legendHumanConv': 'Human-handled',
   'legendTransfer': 'Transfer requests',
   'legendHuman': 'Human',
@@ -172,7 +178,8 @@ const Map<String, String> enStrings = {
   'summaryLoading': 'Summarizing, please wait (about ten seconds)…',
   'summaryEmpty':
       'No summary yet. Tap the button at the top right to let AI summarize visitor questions in this range into key points.',
-  'summaryNote': 'The summary calls the model live, takes about ten seconds, and consumes tokens.',
+  'summaryNote':
+      'The summary calls the model live, takes about ten seconds, and consumes tokens.',
 
   // Errors
   'sessionExpired': 'Session expired, please sign in again',
@@ -195,4 +202,14 @@ const Map<String, String> enStrings = {
 
   // Misc
   'yesterday': 'Yesterday {0}',
+
+  // Login entries
+  'loginIntroEntry': 'Platform overview',
+  'loginRegisterEntry': 'Company sign-up',
+  'introBody':
+      'One support system, from web console to mobile\n\n· Multi-channel inbox: inquiries from web, app and mini-programs all land in one workbench\n· Company console: after registration, configure routing rules, agent teams and the knowledge base in the web console\n· On call anywhere: conversations reach your phone in real time, so you can take over, assign and reply on the move\n· Data insights: conversation volume, first-response time and satisfaction trends at a glance\n· Global ready: 11 languages follow the system automatically for cross-border teams\n\nHow to start: open support.breathmeters.net in a desktop browser to register your company and set up the console, then sign in to this app with the same company account.',
+  'registerBody':
+      'Company registration must be completed in a desktop browser.\nCopy the link below and open it on a PC.\n\nThe mobile app is only for signing in with a registered company account.',
+  'copyLink': 'Copy link',
+  'linkCopied': 'Link copied',
 };
