@@ -74,6 +74,17 @@ jobs:
           channel: stable
           cache: true
 
+      # 工程最低支持 iOS 26.0，而 macos-15 镜像默认 Xcode 是 16.4（只带 iOS 18 SDK），
+      # 直接用默认 Xcode 会报 "deployment target 26.0 超出支持范围"。
+      # 镜像里已预装 Xcode 26.x，这里挑版本号最大的一个（26.3 > 26.2 > 26.1.1 > 26.0.1）。
+      - name: select Xcode 26
+        run: |
+          set -euo pipefail
+          XCODE_APP=$(ls -d /Applications/Xcode_26*.app | tail -n 1)
+          echo "using $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP"
+          xcodebuild -version
+
       # 三步：还原 p12 与描述文件 → 建临时钥匙串并导入证书 → 授权 codesign 读取私钥。
       # 缺 partition-list 这一步时，codesign 会报 errSecInternalComponent。
       - name: restore ios signing

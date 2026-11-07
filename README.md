@@ -284,10 +284,11 @@ iOS（`ios/Runner/Info.plist`）：
 </array>
 ```
 
-`ios/Podfile` 需要 iOS 13+（Firebase iOS 11 的要求）：
+`ios/Podfile` 最低支持 iOS 26.0（本工程已提交该 Podfile，`Runner.xcodeproj` 的
+`IPHONEOS_DEPLOYMENT_TARGET` 同为 26.0）：
 
 ```ruby
-platform :ios, '13.0'
+platform :ios, '26.0'
 ```
 
 `ios/Runner/AppDelegate.swift` 需要注册插件与通知代理：
