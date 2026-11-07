@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
+import '../l10n/app_strings.dart';
 import '../models/models.dart';
 import '../services/sound_service.dart';
 import '../state/app_state.dart';
@@ -310,10 +311,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
     try {
       await state.setOnline(next);
       if (!mounted) return;
-      showSnack(
-        context,
-        next ? '已上线，新会话会优先分配给你' : '已下线，不再分配新会话（已接待的会话不受影响）',
-      );
+      final s = AppStrings.current;
+      showSnack(context, next ? s.onlineOnToast : s.onlineOffToast);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     } finally {
@@ -349,7 +348,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
             ),
             const SizedBox(width: 5),
             Text(
-              busy ? '切换中' : (online ? '在线' : '离线'),
+              busy
+                  ? AppStrings.current.switching
+                  : (online ? AppStrings.current.online : AppStrings.current.offline),
               style: TextStyle(
                 fontSize: 11,
                 height: 1.2,
@@ -364,6 +365,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     final hasFilter = _keyword.isNotEmpty || _status >= 0 || _projectId > 0;
     return Column(
       children: [
@@ -373,13 +375,13 @@ class _ConversationsPageState extends State<ConversationsPage> {
             children: [
               Row(
                 children: [
-                  const Text(
-                    '会话队列',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  Text(
+                    s.conversationQueue,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '共 $_total 个',
+                    s.totalCount('$_total'),
                     style: const TextStyle(fontSize: 11, color: AppColors.textMute),
                   ),
                   const Spacer(),
@@ -402,7 +404,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                         minimumSize: const Size(40, 28),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text('重置筛选', style: TextStyle(fontSize: 11)),
+                      child: Text(s.resetFilters, style: const TextStyle(fontSize: 11)),
                     ),
                 ],
               ),
@@ -413,13 +415,13 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 onChanged: _onSearchChanged,
                 onSubmitted: _submitSearch,
                 decoration: InputDecoration(
-                  hintText: '搜索会话标题 / 访客',
+                  hintText: s.searchConversationHint,
                   isDense: true,
                   prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMute),
                   suffixIcon: _searchCtrl.text.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: '清除',
+                          tooltip: s.clear,
                           onPressed: () {
                             _searchCtrl.clear();
                             _submitSearch('');
@@ -434,25 +436,25 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 child: Row(
                   children: [
                     PillButton(
-                      label: '全部',
+                      label: s.all,
                       selected: _status < 0,
                       onTap: () => _setStatus(-1),
                     ),
                     const SizedBox(width: 6),
                     PillButton(
-                      label: '进行中',
+                      label: s.statusActive,
                       selected: _status == 0,
                       onTap: () => _setStatus(0),
                     ),
                     const SizedBox(width: 6),
                     PillButton(
-                      label: '需人工',
+                      label: s.statusHuman,
                       selected: _status == 1,
                       onTap: () => _setStatus(1),
                     ),
                     const SizedBox(width: 6),
                     PillButton(
-                      label: '已关闭',
+                      label: s.statusClosed,
                       selected: _status == 2,
                       onTap: () => _setStatus(2),
                     ),
@@ -470,9 +472,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
   }
 
   Widget _buildProjectFilter() {
-    var label = '全部项目';
+    final s = AppStrings.current;
+    var label = s.allProjects;
     if (_projectId > 0) {
-      label = '项目 #$_projectId';
+      label = s.projectFallback('$_projectId');
       for (final p in _projects) {
         if (p.id == _projectId) {
           label = p.name;
@@ -482,10 +485,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }
     final active = _projectId > 0;
     return PopupMenuButton<int>(
-      tooltip: '项目筛选',
+      tooltip: s.projectFilter,
       onSelected: _setProject,
       itemBuilder: (context) => <PopupMenuEntry<int>>[
-        const PopupMenuItem<int>(value: 0, child: Text('全部项目')),
+        PopupMenuItem<int>(value: 0, child: Text(s.allProjects)),
         ..._projects.map((p) => PopupMenuItem<int>(value: p.id, child: Text(p.name))),
       ],
       child: Container(
@@ -532,9 +535,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
           const SizedBox(height: 60),
           EmptyState(
             icon: Icons.cloud_off_outlined,
-            text: '会话加载失败',
+            text: AppStrings.current.conversationLoadFailed,
             hint: _error,
-            action: FilledButton.tonal(onPressed: _retry, child: const Text('重试')),
+            action: FilledButton.tonal(
+              onPressed: _retry,
+              child: Text(AppStrings.current.retry),
+            ),
           ),
         ],
       );
@@ -544,12 +550,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
         onRefresh: () => _refresh(),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 80),
+          children: [
+            const SizedBox(height: 80),
             EmptyState(
               icon: Icons.forum_outlined,
-              text: '暂无会话',
-              hint: '换一个筛选条件，或等访客发来新消息',
+              text: AppStrings.current.noConversations,
+              hint: AppStrings.current.noConversationsHint,
             ),
           ],
         ),
@@ -590,7 +596,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
           child: TextButton(
             onPressed: _loadMore,
             child: Text(
-              '加载更多（${_items.length}/$_total）',
+              AppStrings.current.loadMore('${_items.length}', '$_total'),
               style: const TextStyle(fontSize: 12),
             ),
           ),
@@ -601,7 +607,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Center(
         child: Text(
-          '已加载全部 $_total 条',
+          AppStrings.current.allLoaded('$_total'),
           style: const TextStyle(fontSize: 11, color: AppColors.textMute),
         ),
       ),
@@ -611,9 +617,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Widget _buildTile(Conversation c) {
     final closed = c.status == 2;
     final unread = c.adminUnread > 0;
+    final s = AppStrings.current;
     final owner = c.agentName.isNotEmpty
-        ? '客服 ${c.agentName}'
-        : (c.status == 1 ? '待分配' : '');
+        ? s.agentLabel(c.agentName)
+        : (c.status == 1 ? s.unassigned : '');
     return Material(
       color: Colors.transparent,
       child: InkWell(

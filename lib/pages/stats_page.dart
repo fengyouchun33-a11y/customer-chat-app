@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
+import '../l10n/app_strings.dart';
 import '../models/models.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
@@ -101,7 +102,8 @@ class _StatsPageState extends State<StatsPage> {
     final api = context.read<AppState>().api;
     setState(() => _summing = true);
     try {
-      final body = <String, dynamic>{'days': _days, 'lang': 'zh'};
+      final code = AppStrings.current.code;
+      final body = <String, dynamic>{'days': _days, 'lang': code.startsWith('zh') ? 'zh' : code};
       if (_projectId > 0) body['project_id'] = _projectId;
       final data = await api.post(
         '/admin/stats/summary',
@@ -114,7 +116,7 @@ class _StatsPageState extends State<StatsPage> {
           _summary = StatsSummary.fromJson(Map<String, dynamic>.from(data));
         });
       }
-      showSnack(context, '总结已更新');
+      showSnack(context, AppStrings.current.summaryUpdated);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     } finally {
@@ -135,11 +137,12 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   String get _projectLabel {
-    if (_projectId <= 0) return '全部项目';
+    final s = AppStrings.current;
+    if (_projectId <= 0) return s.allProjects;
     for (final p in _projects) {
       if (p.id == _projectId) return p.name;
     }
-    return '项目 #$_projectId';
+    return s.projectFallback('$_projectId');
   }
 
   List<String> get _dateLabels => _data.series
@@ -154,6 +157,8 @@ class _StatsPageState extends State<StatsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 读取一次确保语言切换时整页跟着 Localizations 重建
+    AppStrings.of(context);
     final totals = _data.totals;
     return RefreshIndicator(
       onRefresh: _load,
@@ -206,7 +211,7 @@ class _StatsPageState extends State<StatsPage> {
                   children: [
                     for (final d in AppConfig.statRanges)
                       PillButton(
-                        label: '$d 天',
+                        label: AppStrings.current.daysRange('$d'),
                         selected: _days == d,
                         onTap: () => _setDays(d),
                       ),
@@ -232,10 +237,10 @@ class _StatsPageState extends State<StatsPage> {
   Widget _buildProjectFilter() {
     final active = _projectId > 0;
     return PopupMenuButton<int>(
-      tooltip: '项目筛选',
+      tooltip: AppStrings.current.projectFilter,
       onSelected: _setProject,
       itemBuilder: (context) => <PopupMenuEntry<int>>[
-        const PopupMenuItem<int>(value: 0, child: Text('全部项目')),
+        PopupMenuItem<int>(value: 0, child: Text(AppStrings.current.allProjects)),
         ..._projects.map((p) => PopupMenuItem<int>(value: p.id, child: Text(p.name))),
       ],
       child: Container(
@@ -272,9 +277,11 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildKpiGrid(StatsTotals t) {
+    final s = AppStrings.current;
     return LayoutBuilder(
       builder: (context, box) {
         final half = (box.maxWidth - 10) / 2;
+        final transfers = fmtNumber(t.transferRequests);
         return Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -282,38 +289,40 @@ class _StatsPageState extends State<StatsPage> {
             SizedBox(
               width: half,
               child: _kpiCard(
-                '会话数',
+                s.kpiConversations,
                 fmtNumber(t.conversations),
-                '最近 $_days 天新建',
+                s.kpiConversationsSub('$_days'),
                 AppColors.text,
               ),
             ),
             SizedBox(
               width: half,
               child: _kpiCard(
-                'AI 回答数',
+                s.kpiAiAnswers,
                 fmtNumber(t.aiAnswers),
-                '平均每会话 ${_num1(t.aiPerConversation)} 轮',
+                s.kpiAiSub(_num1(t.aiPerConversation)),
                 AppColors.ok,
               ),
             ),
             SizedBox(
               width: half,
               child: _kpiCard(
-                '人工接待会话',
+                s.kpiHuman,
                 fmtNumber(t.humanConversations),
-                '${t.humanRate == null ? '占比 —' : '占会话 ${fmtPercent(t.humanRate)}'} · 转人工 ${fmtNumber(t.transferRequests)} 次',
+                t.humanRate == null
+                    ? s.kpiHumanSubNoRate(transfers)
+                    : s.kpiHumanSubWithRate(fmtPercent(t.humanRate), transfers),
                 AppColors.signal,
               ),
             ),
             SizedBox(
               width: half,
               child: _kpiCard(
-                '知识库命中率',
+                s.kpiKb,
                 t.kbHitRate == null ? '—' : fmtPercent(t.kbHitRate),
                 t.kbSearches > 0
-                    ? '${fmtNumber(t.kbSearches)} 次检索命中 ${fmtNumber(t.kbHits)} 次'
-                    : '该区间还没有检索记录',
+                    ? s.kpiKbSub(fmtNumber(t.kbSearches), fmtNumber(t.kbHits))
+                    : s.kpiKbEmpty,
                 AppColors.text,
               ),
             ),
@@ -402,43 +411,45 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildConvChart() {
+    final s = AppStrings.current;
     final spotsA = _spots((p) => p.conversations);
     final spotsB = _spots((p) => p.aiAnswers);
     return _chartCard(
-      title: '每日会话数与 AI 回答数',
-      tip: '没有数据的日子补 0，曲线不会把两天连成直线',
+      title: s.chartConvTitle,
+      tip: s.chartConvTip,
       legend: [
-        _legendItem('新建会话', AppColors.accent),
-        _legendItem('AI 回答', AppColors.ok),
+        _legendItem(s.legendNewConv, AppColors.accent),
+        _legendItem(s.legendAiAnswer, AppColors.ok),
       ],
       chart: _lineChart(
         spotsA: spotsA,
         spotsB: spotsB,
         colorA: AppColors.accent,
         colorB: AppColors.ok,
-        labelA: '新建会话',
-        labelB: 'AI 回答',
+        labelA: s.legendNewConv,
+        labelB: s.legendAiAnswer,
       ),
     );
   }
 
   Widget _buildHumanChart() {
+    final s = AppStrings.current;
     final spotsA = _spots((p) => p.humanConversations);
     final spotsB = _spots((p) => p.transfers);
     return _chartCard(
-      title: '每日人工接待会话量',
-      tip: '人工接待按当天有客服发言的会话去重统计',
+      title: s.chartHumanTitle,
+      tip: s.chartHumanTip,
       legend: [
-        _legendItem('人工接待会话', AppColors.signal),
-        _legendItem('转人工申请', AppColors.accentStrong, dashed: true),
+        _legendItem(s.legendHumanConv, AppColors.signal),
+        _legendItem(s.legendTransfer, AppColors.accentStrong, dashed: true),
       ],
       chart: _lineChart(
         spotsA: spotsA,
         spotsB: spotsB,
         colorA: AppColors.signal,
         colorB: AppColors.accentStrong,
-        labelA: '人工接待',
-        labelB: '转人工',
+        labelA: s.legendHuman,
+        labelB: s.legendTransferShort,
         dashedB: true,
         areaB: false,
       ),
@@ -446,12 +457,13 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildKbChart() {
+    final s = AppStrings.current;
     return _chartCard(
-      title: '每日知识库检索与命中',
-      tip: 'AI 每回答一次就检索一次，未命中也计入检索数',
+      title: s.chartKbTitle,
+      tip: s.chartKbTip,
       legend: [
-        _legendItem('检索次数', AppColors.accent.withOpacity(0.55)),
-        _legendItem('命中次数', AppColors.ok),
+        _legendItem(s.legendKbSearch, AppColors.accent.withOpacity(0.55)),
+        _legendItem(s.legendKbHit, AppColors.ok),
       ],
       height: 200,
       chart: _barChart(),
@@ -469,8 +481,11 @@ class _StatsPageState extends State<StatsPage> {
     bool areaB = true,
   }) {
     if (_data.series.isEmpty) {
-      return const Center(
-        child: Text('该区间暂无数据', style: TextStyle(fontSize: 11.5, color: AppColors.textMute)),
+      return Center(
+        child: Text(
+          AppStrings.current.noDataInRange,
+          style: const TextStyle(fontSize: 11.5, color: AppColors.textMute),
+        ),
       );
     }
     final maxY = [...spotsA, ...spotsB].fold<double>(1, (m, s) => math.max(m, s.y));
@@ -535,8 +550,11 @@ class _StatsPageState extends State<StatsPage> {
 
   Widget _barChart() {
     if (_data.series.isEmpty) {
-      return const Center(
-        child: Text('该区间暂无数据', style: TextStyle(fontSize: 11.5, color: AppColors.textMute)),
+      return Center(
+        child: Text(
+          AppStrings.current.noDataInRange,
+          style: const TextStyle(fontSize: 11.5, color: AppColors.textMute),
+        ),
       );
     }
     final maxY = _data.series
@@ -566,7 +584,7 @@ class _StatsPageState extends State<StatsPage> {
           touchTooltipData: BarTouchTooltipData(
             getTooltipColor: (group) => AppColors.panel2,
             getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-              '${rodIndex == 0 ? '检索' : '命中'} ${rod.toY.toInt()}',
+              '${rodIndex == 0 ? AppStrings.current.tooltipSearch : AppStrings.current.tooltipHit} ${rod.toY.toInt()}',
               const TextStyle(color: AppColors.text, fontSize: 11),
             ),
           ),
@@ -635,14 +653,15 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildKeywordsCard() {
+    final s = AppStrings.current;
     final keywords = _data.keywords;
     return SectionCard(
-      title: '热门关键词 / 话题',
-      tip: '由 AI 定时归纳访客提问话题',
+      title: s.keywordsTitle,
+      tip: s.keywordsTip,
       child: keywords.isEmpty
-          ? const Text(
-              '该区间没有可用于统计的访客提问',
-              style: TextStyle(fontSize: 12, color: AppColors.textMute),
+          ? Text(
+              s.keywordsEmpty,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMute),
             )
           : Wrap(
               spacing: 8,
@@ -684,15 +703,16 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildTopKbCard() {
+    final s = AppStrings.current;
     final list = _data.topKnowledge;
     final max = list.fold<int>(0, (m, x) => math.max(m, x.count));
     return SectionCard(
-      title: '被引用最多的知识条目',
-      tip: '按 AI 检索命中次数排序',
+      title: s.topKbTitle,
+      tip: s.topKbTip,
       child: list.isEmpty
-          ? const Text(
-              '该区间没有知识库命中记录',
-              style: TextStyle(fontSize: 12, color: AppColors.textMute),
+          ? Text(
+              s.topKbEmpty,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMute),
             )
           : Column(
               children: [
@@ -748,10 +768,11 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildSummaryCard() {
+    final s = AppStrings.current;
     final summary = _summary;
     return SectionCard(
-      title: 'AI 话题总结',
-      tip: '把这段区间的访客提问归纳成几条要点',
+      title: s.summaryTitle,
+      tip: s.summaryTip,
       trailing: FilledButton(
         onPressed: _summing ? null : _genSummary,
         style: FilledButton.styleFrom(
@@ -769,7 +790,7 @@ class _StatsPageState extends State<StatsPage> {
                   color: Color(0xFF04121B),
                 ),
               )
-            : const Text('生成 AI 总结'),
+            : Text(s.genSummary),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -781,14 +802,15 @@ class _StatsPageState extends State<StatsPage> {
             ),
             const SizedBox(height: 10),
             Text(
-              '模型 ${summary.model.isEmpty ? '—' : summary.model} · 生成于 ${fmtDateTime(summary.updateTime)}',
+              s.summaryMeta(
+                summary.model.isEmpty ? '—' : summary.model,
+                fmtDateTime(summary.updateTime),
+              ),
               style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
             ),
           ] else ...[
             Text(
-              _summing
-                  ? '正在归纳，请稍候（约十几秒）…'
-                  : '还没有生成过总结。点右上角按钮，让 AI 把这段区间的访客提问归纳成几条要点。',
+              _summing ? s.summaryLoading : s.summaryEmpty,
               style: TextStyle(
                 fontSize: 12,
                 color: _summing ? AppColors.accent : AppColors.textMute,
@@ -796,9 +818,9 @@ class _StatsPageState extends State<StatsPage> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '总结会现场调用大模型，约十几秒，并消耗 token。',
-              style: TextStyle(fontSize: 10.5, color: AppColors.textMute),
+            Text(
+              s.summaryNote,
+              style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
             ),
           ],
         ],

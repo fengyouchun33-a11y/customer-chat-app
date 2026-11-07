@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
 import '../config/app_config.dart';
+import '../l10n/app_strings.dart';
 import '../models/models.dart';
 import '../services/background_watch_service.dart';
 import '../services/notification_service.dart';
@@ -37,6 +38,9 @@ class AppState extends ChangeNotifier {
   String _token = '';
   bool _restoring = true;
 
+  /// 语言偏好：`system` 表示跟随系统，其余为 zh_CN / zh_TW / en 等语言码
+  String _langPref = AppStrings.systemPref;
+
   AdminUser? admin;
   Tenant? tenant;
   int unreadTotal = 0;
@@ -56,6 +60,14 @@ class AppState extends ChangeNotifier {
   int _watchSeedBeats = 0;
 
   bool get restoring => _restoring;
+
+  /// 语言偏好值：`system` 或具体语言码
+  String get languagePref => _langPref;
+
+  /// MaterialApp 的 locale 覆盖值；null 即跟随系统
+  Locale? get localeOverride =>
+      _langPref == AppStrings.systemPref ? null : AppStrings.localeOf(_langPref);
+
   bool get isLoggedIn => admin != null;
   bool get isPlatform => admin?.isPlatform == true;
   bool get hasPendingConversation => _pendingConversation != null;
@@ -69,6 +81,9 @@ class AppState extends ChangeNotifier {
 
   Future<void> bootstrap() async {
     _prefs = await SharedPreferences.getInstance();
+    // 语言偏好在登录前就要生效：登录页、错误提示和通知文案都依赖它
+    _langPref = _prefs!.getString('keiyo_chat_lang') ?? AppStrings.systemPref;
+    AppStrings.current = AppStrings.forCode(AppStrings.effectiveCode(_langPref));
     // 提示音开关存在本地，登录前就要能读，冷启动首条消息也不漏响
     await SoundService.instance.load();
     // 服务器地址已固定，清掉旧版本遗留的自定义地址配置
@@ -108,7 +123,7 @@ class AppState extends ChangeNotifier {
     final m = Map<String, dynamic>.from((data ?? {}) as Map);
     final user = AdminUser.fromLogin(m);
     _token = (m['token'] ?? '').toString();
-    if (_token.isEmpty) throw const ApiException(-1, '登录返回缺少令牌');
+    if (_token.isEmpty) throw ApiException(-1, AppStrings.current.loginTokenMissing);
 
     admin = user;
     // 平台超管每次登录都要重新选租户；普通成员直接用自己所属租户
@@ -202,6 +217,20 @@ class AppState extends ChangeNotifier {
   /// 新消息提示音开关：只影响前台播放，不同步到服务端
   Future<void> setSoundEnabled(bool enabled) async {
     await SoundService.instance.setEnabled(enabled);
+    notifyListeners();
+  }
+
+  /// 切换界面语言：`system` 跟随系统，其余为语言码。
+  /// 选择落本地，后台 isolate 通过心跳下发拿到同一个语言。
+  Future<void> setLanguage(String pref) async {
+    if (pref == _langPref) return;
+    _langPref = pref;
+    AppStrings.current = AppStrings.forCode(AppStrings.effectiveCode(pref));
+    await _prefs?.setString('keiyo_chat_lang', pref);
+    // 立刻把新语言推给保活 isolate，后台通知不会停在旧语言上
+    _pushWatchUiState();
+    // 常驻通知是系统里已经发出去的那一条，只能主动刷新文案
+    unawaited(BackgroundWatchService.refreshNotification());
     notifyListeners();
   }
 
@@ -301,6 +330,7 @@ class AppState extends ChangeNotifier {
       tenantId: t.id,
       soundEnabled: SoundService.instance.enabled,
       pushRegistered: _prefs?.getBool(PushService.registeredKey) ?? false,
+      lang: AppStrings.current.code,
       openConvKey: _openConvKey,
       baselineSeed: seed,
     );
@@ -365,16 +395,17 @@ class AppState extends ChangeNotifier {
   /// 真撞上同一会话也只是按 id 覆盖，不会在通知栏堆叠。
   Future<void> _notifyWhileForeground(Map<String, dynamic> data, int badge) async {
     final conv = Conversation.fromJson(data);
+    final s = AppStrings.current;
     // 标题只放人名：会话标题是首条消息，拿来当人名会变成「你好 发来新消息」
-    final name = conv.userName.trim().isNotEmpty ? conv.userName.trim() : '访客';
+    final name = conv.userName.trim().isNotEmpty ? conv.userName.trim() : s.visitor;
     final preview = conv.lastMsg.trim();
     final body = preview.isNotEmpty
         ? preview
-        : '${conv.adminUnread > 0 ? conv.adminUnread : 1} 条未读消息';
+        : s.unreadMessages('${conv.adminUnread > 0 ? conv.adminUnread : 1}');
     try {
       await NotificationService.instance.showMessage(
         id: conv.id > 0 ? conv.id : (conv.convKey.hashCode & 0x7fffffff),
-        title: '$name 发来新消息',
+        title: s.newMessageTitle(name),
         body: body,
         data: data,
         badge: badge,

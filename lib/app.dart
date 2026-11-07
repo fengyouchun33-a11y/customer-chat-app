@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'l10n/app_strings.dart';
 import 'pages/home_shell.dart';
 import 'pages/login_page.dart';
 import 'pages/tenant_select_page.dart';
@@ -13,10 +15,21 @@ class ChatApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
     return MaterialApp(
-      title: '智能客服',
+      onGenerateTitle: (context) => AppStrings.of(context).appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(),
+      // locale 为空即跟随系统；用户手动选择后由 AppState 提供覆盖值
+      locale: state.localeOverride,
+      supportedLocales: AppStrings.supportedLocales,
+      localeListResolutionCallback: AppStrings.resolveSystemLocales,
+      localizationsDelegates: const [
+        AppStringsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: const _RootGate(),
     );
   }
@@ -73,25 +86,26 @@ class _SplashPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final s = AppStrings.of(context);
+    return Scaffold(
       backgroundColor: AppColors.bg,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            BrandMark(size: 56),
-            SizedBox(height: 18),
+            const BrandMark(size: 56),
+            const SizedBox(height: 18),
             Text(
-              '智能客服',
-              style: TextStyle(
+              s.appName,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.text,
                 letterSpacing: 0.5,
               ),
             ),
-            SizedBox(height: 20),
-            SizedBox(
+            const SizedBox(height: 20),
+            const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),

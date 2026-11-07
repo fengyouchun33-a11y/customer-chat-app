@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_strings.dart';
+
 /// 视觉规范对齐 keiyo-chat-admin 的暗色信号台：
 /// 深蓝黑底 + 蓝 accent + 琥珀 signal + 绿色 ok，卡片 14px 圆角、1px 细描边。
 class AppColors {
@@ -139,14 +141,15 @@ Color statusColor(int status) {
 }
 
 String statusText(int status) {
+  final s = AppStrings.current;
   switch (status) {
     case 0:
-      return '进行中';
+      return s.statusActive;
     case 1:
-      return '需人工';
+      return s.statusHuman;
     case 2:
-      return '已关闭';
+      return s.statusClosed;
     default:
-      return '未知';
+      return s.statusUnknown;
   }
 }

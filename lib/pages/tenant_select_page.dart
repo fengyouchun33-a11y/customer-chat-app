@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_strings.dart';
 import '../models/models.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
@@ -91,14 +92,15 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
   }
 
   Future<void> _logout() async {
+    final s = AppStrings.current;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('退出登录'),
-        content: const Text('确定要退出当前账号吗？'),
+        title: Text(s.logout),
+        content: Text(s.logoutConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('退出')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.logoutAction)),
         ],
       ),
     );
@@ -110,13 +112,19 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final s = AppStrings.of(context);
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !widget.mandatory,
-        title: const Text('选择租户', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text(s.selectTenantTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         actions: [
           IconButton(
-            tooltip: '退出登录',
+            tooltip: s.language,
+            onPressed: () => showLanguagePicker(context),
+            icon: const Icon(Icons.language, size: 20, color: AppColors.textDim),
+          ),
+          IconButton(
+            tooltip: s.logout,
             onPressed: _logout,
             icon: const Icon(Icons.logout, size: 20, color: AppColors.textDim),
           ),
@@ -132,9 +140,9 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
                 child: TextField(
                   controller: _searchCtrl,
                   onChanged: (v) => setState(() => _keyword = v),
-                  decoration: const InputDecoration(
-                    hintText: '搜索租户名称或 ID',
-                    prefixIcon: Icon(Icons.search, size: 18, color: AppColors.textMute),
+                  decoration: InputDecoration(
+                    hintText: s.searchTenantHint,
+                    prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMute),
                     isDense: true,
                   ),
                 ),
@@ -165,13 +173,13 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${state.admin?.displayName ?? ''} · 平台管理员',
+                  AppStrings.current.platformAdmin(state.admin?.displayName ?? ''),
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  '会话与统计均按所选租户过滤，请选择要进入的租户。',
-                  style: TextStyle(fontSize: 11.5, color: AppColors.textMute, height: 1.5),
+                Text(
+                  AppStrings.current.tenantSelectHint,
+                  style: const TextStyle(fontSize: 11.5, color: AppColors.textMute, height: 1.5),
                 ),
               ],
             ),
@@ -192,13 +200,19 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
           const SizedBox(height: 40),
           EmptyState(
             icon: Icons.cloud_off_outlined,
-            text: '租户列表加载失败',
+            text: AppStrings.current.tenantLoadFailed,
             hint: _error,
-            action: FilledButton.tonal(onPressed: _load, child: const Text('重试')),
+            action: FilledButton.tonal(
+              onPressed: _load,
+              child: Text(AppStrings.current.retry),
+            ),
           ),
           if (widget.mandatory)
             Center(
-              child: TextButton(onPressed: _logout, child: const Text('退出登录')),
+              child: TextButton(
+                onPressed: _logout,
+                child: Text(AppStrings.current.logout),
+              ),
             ),
         ],
       );
@@ -213,8 +227,12 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
             const SizedBox(height: 60),
             EmptyState(
               icon: Icons.business_outlined,
-              text: _keyword.isEmpty ? '暂无可用租户' : '没有匹配的租户',
-              hint: _keyword.isEmpty ? '请先在管理端创建租户后再进入' : '换个关键词试试',
+              text: _keyword.isEmpty
+                  ? AppStrings.current.noTenants
+                  : AppStrings.current.noMatchingTenants,
+              hint: _keyword.isEmpty
+                  ? AppStrings.current.noTenantsHint
+                  : AppStrings.current.tryAnotherKeyword,
             ),
           ],
         ),
@@ -229,12 +247,12 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           if (index == list.length) {
-            return const Padding(
-              padding: EdgeInsets.only(top: 10),
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
               child: Text(
-                '切换租户后，会话与统计会按新租户重新加载',
+                AppStrings.current.tenantSwitchHint,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 10.5, color: AppColors.textMute),
+                style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
               ),
             );
           }
@@ -247,7 +265,9 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
   Widget _buildTile(AppState state, Tenant t) {
     final selecting = _selectingId == t.id;
     final current = state.tenant?.id == t.id;
-    final name = t.companyName.isEmpty ? '租户 #${t.id}' : t.companyName;
+    final name = t.companyName.isEmpty
+        ? AppStrings.current.tenantFallback('${t.id}')
+        : t.companyName;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -287,7 +307,9 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      current ? '当前租户' : 'ID ${t.id}',
+                      current
+                          ? AppStrings.current.currentTenant
+                          : AppStrings.current.tenantIdLabel('${t.id}'),
                       style: TextStyle(
                         fontSize: 11,
                         color: current ? AppColors.accent : AppColors.textMute,

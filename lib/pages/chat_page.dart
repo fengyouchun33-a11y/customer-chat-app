@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_client.dart';
 import '../config/app_config.dart';
+import '../l10n/app_strings.dart';
 import '../models/models.dart';
 import '../services/notification_service.dart';
 import '../state/app_state.dart';
@@ -140,9 +141,9 @@ class _ChatPageState extends State<ChatPage> {
   String _senderLabel(ChatMessage m) {
     if (m.senderName.isNotEmpty) return m.senderName;
     if (m.isVisitor) return _conv.userLabel;
-    if (m.isAgent) return '客服';
-    if (m.isAi) return 'AI';
-    return '系统';
+    if (m.isAgent) return AppStrings.current.senderAgent;
+    if (m.isAi) return AppStrings.current.senderAi;
+    return AppStrings.current.senderSystem;
   }
 
   bool _truthy(dynamic v) => v == true || v == 1;
@@ -391,7 +392,7 @@ class _ChatPageState extends State<ChatPage> {
         ? raw.map((e) => '$e').where((e) => e.isNotEmpty).toList()
         : <String>[];
     if (urls.length != _pendingImages.length) {
-      throw const ApiException(-1, '图片上传失败，请重试');
+      throw ApiException(-1, AppStrings.current.imageUploadFailed);
     }
     return urls;
   }
@@ -401,7 +402,7 @@ class _ChatPageState extends State<ChatPage> {
     if (_sending) return;
     final remain = _maxImages - _pendingImages.length;
     if (remain <= 0) {
-      showSnack(context, '一条消息最多发送 $_maxImages 张图片');
+      showSnack(context, AppStrings.current.maxImages('$_maxImages'));
       return;
     }
     try {
@@ -419,10 +420,10 @@ class _ChatPageState extends State<ChatPage> {
       }
       if (accepted.isNotEmpty) setState(() => _pendingImages.addAll(accepted));
       if (tooLarge > 0 && mounted) {
-        showSnack(context, '$tooLarge 张图片超过 5MB，已跳过', error: true);
+        showSnack(context, AppStrings.current.imagesTooLarge('$tooLarge'), error: true);
       }
     } catch (e) {
-      if (mounted) showSnack(context, '选择图片失败：$e', error: true);
+      if (mounted) showSnack(context, AppStrings.current.pickImageFailed('$e'), error: true);
     }
   }
 
@@ -430,7 +431,7 @@ class _ChatPageState extends State<ChatPage> {
   /// 图片消息在库里的正文是 ![图片](url)，各端统一走 Markdown 渲染
   Widget _markdownImage(MarkdownImageConfig cfg) {
     final src = _absImageUrl(cfg.uri);
-    if (src.isEmpty) return const Text('[图片]');
+    if (src.isEmpty) return Text(AppStrings.current.imagePlaceholder);
     return GestureDetector(
       onTap: () => _previewImage(src),
       child: ClipRRect(
@@ -459,12 +460,15 @@ class _ChatPageState extends State<ChatPage> {
               height: 64,
               color: AppColors.panel2,
               alignment: Alignment.center,
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.broken_image_outlined, size: 13, color: AppColors.textMute),
-                  SizedBox(width: 4),
-                  Text('图片加载失败', style: TextStyle(fontSize: 11, color: AppColors.textMute)),
+                  const Icon(Icons.broken_image_outlined, size: 13, color: AppColors.textMute),
+                  const SizedBox(width: 4),
+                  Text(
+                    AppStrings.current.imageLoadFailed,
+                    style: const TextStyle(fontSize: 11, color: AppColors.textMute),
+                  ),
                 ],
               ),
             ),
@@ -495,9 +499,9 @@ class _ChatPageState extends State<ChatPage> {
             child: Image.network(
               src,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Text(
-                '图片加载失败',
-                style: TextStyle(fontSize: 13, color: Colors.white),
+              errorBuilder: (_, __, ___) => Text(
+                AppStrings.current.imageLoadFailed,
+                style: const TextStyle(fontSize: 13, color: Colors.white),
               ),
             ),
           ),
@@ -510,14 +514,15 @@ class _ChatPageState extends State<ChatPage> {
     if (_actionBusy) return;
     final closing = _conv.status != 2;
     if (closing) {
+      final s = AppStrings.current;
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('关闭会话'),
-          content: const Text('关闭后访客端将结束当前会话；之后再回复会自动重新打开。'),
+          title: Text(s.closeConversation),
+          content: Text(s.closeConversationBody),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('关闭')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.cancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.close)),
           ],
         ),
       );
@@ -533,7 +538,8 @@ class _ChatPageState extends State<ChatPage> {
       );
       if (!mounted) return;
       setState(() => _conv = _conv.copyWith(status: closing ? 2 : 0));
-      showSnack(context, closing ? '会话已关闭' : '会话已重新打开');
+      final s = AppStrings.current;
+      showSnack(context, closing ? s.conversationClosed : s.conversationReopened);
       await _loadMessages(silent: true);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
@@ -584,14 +590,17 @@ class _ChatPageState extends State<ChatPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
-                    '历史表单数据（${forms.length}）',
+                    AppStrings.current.historyForms('${forms.length}'),
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                 ),
                 const Divider(height: 1),
                 Expanded(
                   child: forms.isEmpty
-                      ? const EmptyState(icon: Icons.assignment_outlined, text: '暂无表单数据')
+                      ? EmptyState(
+                          icon: Icons.assignment_outlined,
+                          text: AppStrings.current.noForms,
+                        )
                       : ListView.separated(
                           controller: scrollCtrl,
                           padding: const EdgeInsets.all(14),
@@ -610,6 +619,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
@@ -649,7 +659,7 @@ class _ChatPageState extends State<ChatPage> {
         actions: [
           if (_formMessages.isNotEmpty)
             IconButton(
-              tooltip: '表单数据',
+              tooltip: s.formData,
               onPressed: _openFormSheet,
               icon: Badge(
                 label: Text('${_formMessages.length}'),
@@ -666,13 +676,13 @@ class _ChatPageState extends State<ChatPage> {
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'refresh',
                 child: Row(
                   children: [
-                    Icon(Icons.refresh, size: 17, color: AppColors.textDim),
-                    SizedBox(width: 10),
-                    Text('刷新消息'),
+                    const Icon(Icons.refresh, size: 17, color: AppColors.textDim),
+                    const SizedBox(width: 10),
+                    Text(s.refreshMessages),
                   ],
                 ),
               ),
@@ -686,7 +696,7 @@ class _ChatPageState extends State<ChatPage> {
                       color: AppColors.textDim,
                     ),
                     const SizedBox(width: 10),
-                    Text(_conv.status == 2 ? '重新打开会话' : '关闭会话'),
+                    Text(_conv.status == 2 ? s.reopenConversation : s.closeConversation),
                   ],
                 ),
               ),
@@ -726,7 +736,7 @@ class _ChatPageState extends State<ChatPage> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '$_newCount 条新消息',
+                                  s.newMessages('$_newCount'),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -760,18 +770,21 @@ class _ChatPageState extends State<ChatPage> {
           const SizedBox(height: 60),
           EmptyState(
             icon: Icons.cloud_off_outlined,
-            text: '消息加载失败',
+            text: AppStrings.current.messageLoadFailed,
             hint: _error,
-            action: FilledButton.tonal(onPressed: _retry, child: const Text('重试')),
+            action: FilledButton.tonal(
+              onPressed: _retry,
+              child: Text(AppStrings.current.retry),
+            ),
           ),
         ],
       );
     }
     if (_messages.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.chat_bubble_outline,
-        text: '还没有消息',
-        hint: '访客发来消息后会显示在这里',
+        text: AppStrings.current.noMessages,
+        hint: AppStrings.current.noMessagesHint,
       );
     }
     return ListView.builder(
@@ -805,7 +818,10 @@ class _ChatPageState extends State<ChatPage> {
       child: Center(
         child: TextButton(
           onPressed: _loadOlder,
-          child: const Text('加载更早消息', style: TextStyle(fontSize: 12)),
+          child: Text(
+            AppStrings.current.loadOlder,
+            style: const TextStyle(fontSize: 12),
+          ),
         ),
       ),
     );
@@ -935,7 +951,7 @@ class _ChatPageState extends State<ChatPage> {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              '[ 表单 ] #${m.formId}',
+              AppStrings.current.formTag('${m.formId}'),
               style: const TextStyle(fontSize: 11, color: AppColors.signal),
             ),
           ),
@@ -987,7 +1003,9 @@ class _ChatPageState extends State<ChatPage> {
                   const Icon(Icons.translate, size: 12, color: AppColors.accent),
                   const SizedBox(width: 4),
                   Text(
-                    showOriginal ? '显示译文' : '显示原文',
+                    showOriginal
+                        ? AppStrings.current.showTranslation
+                        : AppStrings.current.showOriginal,
                     style: const TextStyle(fontSize: 10.5, color: AppColors.accent),
                   ),
                   if (m.translatedLang.isNotEmpty) ...[
@@ -1024,7 +1042,7 @@ class _ChatPageState extends State<ChatPage> {
               const Icon(Icons.assignment_outlined, size: 14, color: AppColors.signal),
               const SizedBox(width: 6),
               Text(
-                '第 ${m.formSeq} 次提交',
+                AppStrings.current.formSubmitNo('${m.formSeq}'),
                 style: const TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
@@ -1040,9 +1058,9 @@ class _ChatPageState extends State<ChatPage> {
           ),
           const SizedBox(height: 8),
           if (items.isEmpty)
-            const Text(
-              '（表单内容解析失败）',
-              style: TextStyle(fontSize: 12, color: AppColors.textMute),
+            Text(
+              AppStrings.current.formParseFailed,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMute),
             )
           else
             ...items.map(
@@ -1114,9 +1132,11 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _openFormLink(Uri uri) async {
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok && mounted) showSnack(context, '无法打开链接：$uri', error: true);
+      if (!ok && mounted) {
+        showSnack(context, AppStrings.current.openLinkFailed('$uri'), error: true);
+      }
     } catch (_) {
-      if (mounted) showSnack(context, '无法打开链接：$uri', error: true);
+      if (mounted) showSnack(context, AppStrings.current.openLinkFailed('$uri'), error: true);
     }
   }
 
@@ -1215,16 +1235,16 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ],
             if (closed)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 6),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, size: 12, color: AppColors.signal),
-                    SizedBox(width: 4),
+                    const Icon(Icons.info_outline, size: 12, color: AppColors.signal),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '会话已关闭，发送消息将自动重新打开',
-                        style: TextStyle(fontSize: 10.5, color: AppColors.signal),
+                        AppStrings.current.closedBarHint,
+                        style: const TextStyle(fontSize: 10.5, color: AppColors.signal),
                       ),
                     ),
                   ],
@@ -1242,10 +1262,10 @@ class _ChatPageState extends State<ChatPage> {
                     minLines: 1,
                     maxLines: 4,
                     textInputAction: TextInputAction.newline,
-                    decoration: const InputDecoration(
-                      hintText: '输入回复内容…',
+                    decoration: InputDecoration(
+                      hintText: AppStrings.current.replyHint,
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                   ),
                 ),

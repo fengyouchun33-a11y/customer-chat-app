@@ -1,7 +1,7 @@
 name: keiyo_chat_app
 description: Keiyo 智能客服管理端 APP（会话中心 + 统计）
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   # flutter_foreground_task 9.x 要求 Dart >= 3.4
@@ -9,6 +9,9 @@ environment:
 
 dependencies:
   flutter:
+    sdk: flutter
+  # Material / Cupertino 自带组件文案的多语言支持（列表选择、文本菜单等）
+  flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.8
   dio: ^5.7.0
@@ -18,7 +21,8 @@ dependencies:
   # 0.7.7 起提供 sizedImageBuilder：消息气泡里的图片需要它做尺寸控制与点击预览
   flutter_markdown: ^0.7.7
   fl_chart: ^0.69.2
-  intl: ^0.19.0
+  # flutter_localizations 依赖 intl ^0.20.3，保持一致
+  intl: ^0.20.3
   flutter_local_notifications: ^17.2.4
   flutter_foreground_task: ^9.2.2
   permission_handler: ^11.4.0

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../config/app_config.dart';
+import '../l10n/app_strings.dart';
 
 /// 服务端统一返回 { code, msg, data }，非 0 一律抛这个异常，页面只负责提示。
 class ApiException implements Exception {
@@ -86,17 +87,20 @@ class ApiClient {
         final code = (m['code'] is num) ? (m['code'] as num).toInt() : 0;
         if (code == -401) {
           onUnauthorized?.call();
-          throw ApiException(code, (m['msg'] ?? '登录已过期，请重新登录').toString());
+          throw ApiException(
+            code,
+            (m['msg'] ?? AppStrings.current.sessionExpired).toString(),
+          );
         }
         if (code != 0) {
-          throw ApiException(code, (m['msg'] ?? '请求失败').toString());
+          throw ApiException(code, (m['msg'] ?? AppStrings.current.requestFailed).toString());
         }
         return m['data'];
       }
       // 极少数非包装响应（例如网关错误页）
       if (resp.statusCode == 401) {
         onUnauthorized?.call();
-        throw const ApiException(-401, '登录已过期，请重新登录');
+        throw ApiException(-401, AppStrings.current.sessionExpired);
       }
       return body;
     } on ApiException {
@@ -104,27 +108,28 @@ class ApiClient {
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         onUnauthorized?.call();
-        throw const ApiException(-401, '登录已过期，请重新登录');
+        throw ApiException(-401, AppStrings.current.sessionExpired);
       }
       throw ApiException(-1, _networkMessage(e));
     }
   }
 
   String _networkMessage(DioException e) {
+    final s = AppStrings.current;
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return '网络超时，请稍后重试';
+        return s.networkTimeout;
       case DioExceptionType.connectionError:
-        return '无法连接服务器，请检查网络';
+        return s.cannotConnect;
       case DioExceptionType.badResponse:
         final status = e.response?.statusCode;
         final data = e.response?.data;
         if (data is Map && data['msg'] != null) return data['msg'].toString();
-        return '服务器返回异常（HTTP $status）';
+        return s.httpError('$status');
       default:
-        return e.message ?? '网络错误';
+        return e.message ?? s.networkError;
     }
   }
 }

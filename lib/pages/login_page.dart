@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_strings.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -34,7 +35,7 @@ class _LoginPageState extends State<LoginPage> {
     final account = _accountCtrl.text.trim();
     final passwd = _pwdCtrl.text;
     if (account.isEmpty || passwd.isEmpty) {
-      setState(() => _error = '请输入账号和密码');
+      setState(() => _error = AppStrings.current.loginEmptyError);
       return;
     }
     setState(() {
@@ -54,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
+    final s = AppStrings.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -65,29 +66,34 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      BrandMark(size: 48),
-                      SizedBox(width: 14),
+                      const BrandMark(size: 48),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '智能客服',
-                              style: TextStyle(
+                              s.appName,
+                              style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              '移动端客服工作台',
-                              style: TextStyle(fontSize: 12, color: AppColors.textMute),
+                              s.loginSubtitle,
+                              style: const TextStyle(fontSize: 12, color: AppColors.textMute),
                             ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        tooltip: s.language,
+                        onPressed: () => showLanguagePicker(context),
+                        icon: const Icon(Icons.language, size: 20, color: AppColors.textMute),
                       ),
                     ],
                   ),
@@ -108,9 +114,9 @@ class _LoginPageState extends State<LoginPage> {
                           textInputAction: TextInputAction.next,
                           autocorrect: false,
                           onSubmitted: (_) => _pwdFocus.requestFocus(),
-                          decoration: const InputDecoration(
-                            hintText: '账号',
-                            prefixIcon: Icon(Icons.person_outline, size: 18, color: AppColors.textMute),
+                          decoration: InputDecoration(
+                            hintText: s.account,
+                            prefixIcon: const Icon(Icons.person_outline, size: 18, color: AppColors.textMute),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -121,10 +127,10 @@ class _LoginPageState extends State<LoginPage> {
                           textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _submit(),
                           decoration: InputDecoration(
-                            hintText: '密码',
+                            hintText: s.password,
                             prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textMute),
                             suffixIcon: IconButton(
-                              tooltip: _obscure ? '显示密码' : '隐藏密码',
+                              tooltip: _obscure ? s.showPassword : s.hidePassword,
                               onPressed: () => setState(() => _obscure = !_obscure),
                               icon: Icon(
                                 _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -176,34 +182,11 @@ class _LoginPageState extends State<LoginPage> {
                                       color: Color(0xFF04121B),
                                     ),
                                   )
-                                : const Text('登 录'),
+                                : Text(s.loginButton),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        // 服务器地址固定，仅展示当前连接地址，不提供修改入口
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.dns_outlined, size: 15, color: AppColors.textMute),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                state.baseUrl,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 11.5, color: AppColors.textMute),
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    '平台管理员登录后需先选择一家租户',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11.5, color: AppColors.textMute),
                   ),
                 ],
               ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
+import '../l10n/app_strings.dart';
+import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 
 /// 统一提示条：错误用红、成功用绿，避免各页面自己拼 SnackBar。
@@ -28,6 +31,44 @@ void showSnack(BuildContext context, String message, {bool error = false}) {
 }
 
 String unreadText(int n) => n > 99 ? '99+' : '$n';
+
+/// 语言选择弹窗：跟随系统 + 内置语言，选择后立即生效并落本地。
+Future<void> showLanguagePicker(BuildContext context) async {
+  final state = context.read<AppState>();
+  final current = state.languagePref;
+  final picked = await showDialog<String>(
+    context: context,
+    builder: (ctx) {
+      final s = AppStrings.of(ctx);
+      return SimpleDialog(
+        title: Text(s.language),
+        children: [
+          _languageTile(ctx, AppStrings.systemPref, s.followSystem, current),
+          for (final code in AppStrings.supportedCodes)
+            _languageTile(ctx, code, AppStrings.nativeName(code), current),
+        ],
+      );
+    },
+  );
+  if (picked != null) await state.setLanguage(picked);
+}
+
+Widget _languageTile(BuildContext ctx, String value, String label, String current) {
+  final selected = value == current;
+  return ListTile(
+    dense: true,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+    title: Text(
+      label,
+      style: TextStyle(
+        fontSize: 13.5,
+        color: selected ? AppColors.accentStrong : AppColors.text,
+      ),
+    ),
+    trailing: selected ? const Icon(Icons.check, size: 18, color: AppColors.accent) : null,
+    onTap: () => Navigator.of(ctx).pop(value),
+  );
+}
 
 /// 品牌标，登录页与启动页共用。
 ///
@@ -386,7 +427,7 @@ class ErrorBanner extends StatelessWidget {
                 minimumSize: const Size(40, 28),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('重试', style: TextStyle(fontSize: 12)),
+              child: Text(AppStrings.of(context).retry, style: const TextStyle(fontSize: 12)),
             ),
         ],
       ),

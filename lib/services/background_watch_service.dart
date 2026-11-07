@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
 import '../config/app_config.dart';
+import '../l10n/app_strings.dart';
 import '../models/models.dart';
 import 'notification_service.dart';
 import 'realtime_service.dart';
@@ -32,12 +33,13 @@ class BackgroundWatchService {
   /// 主 isolate 启动时调用一次（main 里，runApp 之前）
   static void init() {
     if (kIsWeb) return;
+    final s = AppStrings.current;
     FlutterForegroundTask.initCommunicationPort();
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: 'keiyo_chat_service',
-        channelName: '智能客服在线',
-        channelDescription: '保持连接，及时接收访客消息',
+        channelName: s.fgChannelName,
+        channelDescription: s.fgChannelDesc,
         onlyAlertOnce: true,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
@@ -59,17 +61,32 @@ class BackgroundWatchService {
     if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     try {
       if (await FlutterForegroundTask.isRunningService) return;
+      final s = AppStrings.current;
       await FlutterForegroundTask.startService(
         serviceId: 2601,
         // 与 AndroidManifest 中的 android:foregroundServiceType 保持一致
         serviceTypes: const [ForegroundServiceTypes.remoteMessaging],
-        notificationTitle: '智能客服在线',
-        notificationText: '正在后台接收访客消息',
+        notificationTitle: s.fgChannelName,
+        notificationText: s.fgNotificationText,
         callback: keiyoWatchCallback,
       );
     } catch (_) {
       // 权限未授予、系统限制或服务已在运行时忽略，页面轮询仍可用
     }
+  }
+
+  /// 切换语言后刷新常驻通知文案：服务只在登录/换租户时重建，
+  /// 不主动更新的话通知栏会一直停在切换前的语言。
+  static Future<void> refreshNotification() async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+    try {
+      if (!await FlutterForegroundTask.isRunningService) return;
+      final s = AppStrings.current;
+      await FlutterForegroundTask.updateService(
+        notificationTitle: s.fgChannelName,
+        notificationText: s.fgNotificationText,
+      );
+    } catch (_) {}
   }
 
   static Future<void> stop() async {
@@ -90,6 +107,7 @@ class BackgroundWatchService {
     required int tenantId,
     required bool soundEnabled,
     required bool pushRegistered,
+    String? lang,
     String? openConvKey,
     String? baselineSeed,
   }) {
@@ -103,6 +121,7 @@ class BackgroundWatchService {
         'tenant_id': tenantId,
         'sound_enabled': soundEnabled,
         'push_registered': pushRegistered,
+        'lang': lang,
         'baseline_seed': baselineSeed,
       });
     } catch (e) {
@@ -245,6 +264,11 @@ class KeiyoWatchTaskHandler extends TaskHandler {
     _tenantId = tenantId;
     _soundOn = data['sound_enabled'] != false;
     _pushRegistered = data['push_registered'] == true;
+    // 保活 isolate 的 Localizations 树不存在，通知文案只能靠语言码自己切
+    final lang = data['lang'];
+    if (lang is String && lang.isNotEmpty) {
+      AppStrings.current = AppStrings.forCode(lang);
+    }
     final fg = data['foreground'] == true;
     if (fg != _foreground) debugPrint('[watch] context foreground $_foreground->$fg');
     _foreground = fg;
@@ -430,14 +454,15 @@ class KeiyoWatchTaskHandler extends TaskHandler {
   }
 
   Future<void> _notify(Conversation c, int totalUnread, int tenantId) async {
+    final s = AppStrings.current;
     // 标题只放人名：会话标题是首条消息，拿来当人名会变成「你好 发来新消息」
-    final name = c.userName.trim().isNotEmpty ? c.userName.trim() : '访客';
+    final name = c.userName.trim().isNotEmpty ? c.userName.trim() : s.visitor;
     // 通知栏正文用最新一条消息（服务端已压成单行：图片→[图片]），与微信一致；
     // 拿不到正文时才回退到未读数，不再用会话标题（首条消息）冒充最新内容
     final preview = c.lastMsg.trim();
     final body = preview.isNotEmpty
         ? preview
-        : '${c.adminUnread > 0 ? c.adminUnread : 1} 条未读消息';
+        : s.unreadMessages('${c.adminUnread > 0 ? c.adminUnread : 1}');
 
     final payload = <String, dynamic>{
       'tenant_id': tenantId,
@@ -462,7 +487,7 @@ class KeiyoWatchTaskHandler extends TaskHandler {
     try {
       await NotificationService.instance.showMessage(
         id: c.id > 0 ? c.id : (c.convKey.hashCode & 0x7fffffff),
-        title: '$name 发来新消息',
+        title: s.newMessageTitle(name),
         body: body,
         data: payload,
         badge: totalUnread,

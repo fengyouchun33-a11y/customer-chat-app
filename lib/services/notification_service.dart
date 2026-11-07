@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../l10n/app_strings.dart';
+
 /// 本地通知。主 isolate 负责接收点击，后台保活 isolate 负责展示新消息。
 ///
 /// 是否应该通知由调用方决定：后台轮询用的仍是当前管理员的 token 与租户，
@@ -13,11 +15,12 @@ class NotificationService {
   static final NotificationService instance = NotificationService._();
 
   static const String channelId = 'keiyo_chat_messages';
-  static const String channelName = '访客消息';
+  // 渠道名/描述按当前语言展示；Android 重复创建同名 id 的渠道会覆盖旧文案
+  static String get channelName => AppStrings.current.notifChannelName;
   // 关闭提示音时走这个无声渠道：Android 8+ 声音是渠道级属性，单条通知改不了
   static const String silentChannelId = 'keiyo_chat_messages_silent';
-  static const String silentChannelName = '访客消息（静音）';
-  static const String channelDescription = '收到新的访客消息时提醒';
+  static String get silentChannelName => AppStrings.current.notifChannelSilentName;
+  static String get channelDescription => AppStrings.current.notifChannelDesc;
   static const String groupKey = 'keiyo_chat';
 
   final FlutterLocalNotificationsPlugin _plugin =
@@ -100,7 +103,7 @@ class NotificationService {
       final android = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       await android?.createNotificationChannel(
-        const AndroidNotificationChannel(
+        AndroidNotificationChannel(
           channelId,
           channelName,
           description: channelDescription,
@@ -110,7 +113,7 @@ class NotificationService {
         ),
       );
       await android?.createNotificationChannel(
-        const AndroidNotificationChannel(
+        AndroidNotificationChannel(
           silentChannelId,
           silentChannelName,
           description: channelDescription,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_strings.dart';
 import '../models/models.dart';
 import '../services/background_watch_service.dart';
 import '../services/notification_service.dart';
@@ -109,23 +110,20 @@ class _HomeShellState extends State<HomeShell> {
     if (!mounted) return;
 
     final android = defaultTargetPlatform == TargetPlatform.android;
+    final s = AppStrings.current;
     final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('开启消息提醒'),
-        content: Text(
-          android
-              ? '为了在后台及时收到访客消息，智能客服需要显示常驻通知并允许后台运行。\n\n建议同时允许忽略电池优化；部分手机还需在系统设置中允许自启动。'
-              : '为了在通知栏收到访客消息，请允许通知权限。\n\niOS 的实时提醒由系统推送（APNs）负责，无需保持 APP 在后台运行。',
-        ),
+        title: Text(s.keepAliveTitle),
+        content: Text(android ? s.keepAliveAndroidBody : s.keepAliveIosBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('稍后'),
+            child: Text(s.later),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('去开启'),
+            child: Text(s.goEnable),
           ),
         ],
       ),
@@ -144,26 +142,27 @@ class _HomeShellState extends State<HomeShell> {
     await BackgroundWatchService.start();
     if (!mounted) return;
 
-    final parts = <String>[granted ? '通知已开启' : '通知未授权'];
+    final s = AppStrings.current;
+    final parts = <String>[granted ? s.notifOn : s.notifOff];
     if (defaultTargetPlatform == TargetPlatform.android) {
-      parts.add(battery ? '后台运行已允许' : '后台运行未授权');
+      parts.add(battery ? s.bgOn : s.bgOff);
     }
-    showSnack(context, parts.join('，'));
+    showSnack(context, parts.join(s.listSeparator));
 
     if (!granted) {
       final open = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('通知未授权'),
-          content: const Text('需要在系统设置里允许通知，才能在通知栏看到新消息。'),
+          title: Text(s.notifOff),
+          content: Text(s.notifOffDialogBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消'),
+              child: Text(s.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('打开设置'),
+              child: Text(s.openSettings),
             ),
           ],
         ),
@@ -177,7 +176,8 @@ class _HomeShellState extends State<HomeShell> {
     final next = !state.soundEnabled;
     await state.setSoundEnabled(next);
     if (!mounted) return;
-    showSnack(context, next ? '已开启新消息提示音' : '已关闭新消息提示音');
+    final s = AppStrings.current;
+    showSnack(context, next ? s.soundOnToast : s.soundOffToast);
     // 开启时试听一次，方便确认音量与音效
     if (next) unawaited(SoundService.instance.playNewMessage());
   }
@@ -195,21 +195,23 @@ class _HomeShellState extends State<HomeShell> {
     final next = !(state.admin?.autoTranslate ?? false);
     try {
       await state.setAutoTranslate(next);
-      if (mounted) showSnack(context, next ? '已开启自动翻译' : '已关闭自动翻译');
+      final s = AppStrings.current;
+      if (mounted) showSnack(context, next ? s.translateOnToast : s.translateOffToast);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     }
   }
 
   Future<void> _logout() async {
+    final s = AppStrings.current;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('退出登录'),
-        content: const Text('确定要退出当前账号吗？'),
+        title: Text(s.logout),
+        content: Text(s.logoutConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('退出')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.logoutAction)),
         ],
       ),
     );
@@ -234,8 +236,9 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final s = AppStrings.of(context);
     final unread = state.unreadTotal;
-    final tenantName = state.tenant?.companyName ?? '未选择租户';
+    final tenantName = state.tenant?.companyName ?? s.noTenantSelected;
     final autoTranslate = state.admin?.autoTranslate ?? false;
     final soundOn = state.soundEnabled;
 
@@ -246,9 +249,9 @@ class _HomeShellState extends State<HomeShell> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              '客服工作台',
-              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
+            Text(
+              s.workbenchTitle,
+              style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 2),
             Row(
@@ -270,7 +273,7 @@ class _HomeShellState extends State<HomeShell> {
         actions: [
           if (state.isPlatform)
             IconButton(
-              tooltip: '切换租户',
+              tooltip: s.switchTenant,
               onPressed: _openTenantPicker,
               icon: const Icon(Icons.swap_horiz, size: 20, color: AppColors.textDim),
             ),
@@ -287,6 +290,9 @@ class _HomeShellState extends State<HomeShell> {
                 case 'tenant':
                   _openTenantPicker();
                   break;
+                case 'language':
+                  showLanguagePicker(context);
+                  break;
                 case 'logout':
                   _logout();
                   break;
@@ -296,17 +302,26 @@ class _HomeShellState extends State<HomeShell> {
               _menuItem(
                 'translate',
                 autoTranslate ? Icons.translate : Icons.translate_outlined,
-                autoTranslate ? '自动翻译：已开启' : '自动翻译：已关闭',
+                autoTranslate ? s.autoTranslateOn : s.autoTranslateOff,
               ),
               _menuItem(
                 'sound',
                 soundOn ? Icons.volume_up : Icons.volume_off,
-                soundOn ? '提示音：已开启' : '提示音：已关闭',
+                soundOn ? s.soundMenuOn : s.soundMenuOff,
+              ),
+              _menuItem(
+                'language',
+                Icons.language,
+                s.languageMenu(
+                  AppStrings.nativeName(
+                    AppStrings.effectiveCode(state.languagePref),
+                  ),
+                ),
               ),
               if (state.isPlatform)
-                _menuItem('tenant', Icons.swap_horiz, '切换租户'),
+                _menuItem('tenant', Icons.swap_horiz, s.switchTenant),
               const PopupMenuDivider(),
-              _menuItem('logout', Icons.logout, '退出登录'),
+              _menuItem('logout', Icons.logout, s.logout),
             ],
           ),
         ],
@@ -330,12 +345,12 @@ class _HomeShellState extends State<HomeShell> {
               label: Text(unreadText(unread)),
               child: const Icon(Icons.forum),
             ),
-            label: '会话',
+            label: s.tabConversations,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.insights_outlined),
-            activeIcon: Icon(Icons.insights),
-            label: '统计',
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.insights_outlined),
+            activeIcon: const Icon(Icons.insights),
+            label: s.tabStats,
           ),
         ],
       ),

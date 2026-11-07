@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 
+import '../l10n/app_strings.dart';
+
 /// 服务端时间是 MySQL datetime 字符串（本地时区口径），直接按本地时间解析。
 DateTime? parseServerTime(dynamic value) {
   if (value == null) return null;
@@ -16,7 +18,7 @@ String fmtTimeShort(DateTime? t) {
   final day = DateTime(t.year, t.month, t.day);
   final diff = today.difference(day).inDays;
   if (diff == 0) return DateFormat('HH:mm').format(t);
-  if (diff == 1) return '昨天 ${DateFormat('HH:mm').format(t)}';
+  if (diff == 1) return AppStrings.current.yesterday(DateFormat('HH:mm').format(t));
   if (t.year == now.year) return DateFormat('MM-dd').format(t);
   return DateFormat('yyyy-MM-dd').format(t);
 }
