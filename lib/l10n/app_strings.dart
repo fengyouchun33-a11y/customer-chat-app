@@ -237,6 +237,7 @@ class AppStrings {
   String allLoaded(String n) => _fmt('allLoaded', [n]);
   String agentLabel(String name) => _fmt('agentLabel', [name]);
   String get unassigned => _t('unassigned');
+  String get anonymous => _t('anonymous');
 
   // 聊天
   String get senderAgent => _t('senderAgent');
@@ -252,6 +253,10 @@ class AppStrings {
   String get closeConversationBody => _t('closeConversationBody');
   String get conversationClosed => _t('conversationClosed');
   String get conversationReopened => _t('conversationReopened');
+  String get pauseAi => _t('pauseAi');
+  String get resumeAi => _t('resumeAi');
+  String get aiPaused => _t('aiPaused');
+  String get aiResumed => _t('aiResumed');
   String historyForms(String n) => _fmt('historyForms', [n]);
   String get noForms => _t('noForms');
   String get formData => _t('formData');
@@ -270,6 +275,19 @@ class AppStrings {
   String openLinkFailed(String uri) => _fmt('openLinkFailed', [uri]);
   String get closedBarHint => _t('closedBarHint');
   String get replyHint => _t('replyHint');
+
+  // 用户信息（会话中心查看用户档案，仅开放接口创建的会话展示）
+  String get userInfo => _t('userInfo');
+  String get userName => _t('userName');
+  String get userAccount => _t('userAccount');
+  String get userPhone => _t('userPhone');
+  String get userEmail => _t('userEmail');
+  String get userExternalId => _t('userExternalId');
+  String get userProject => _t('userProject');
+  String get userRegTime => _t('userRegTime');
+  String get userRemark => _t('userRemark');
+  String get userInfoLoadFailed => _t('userInfoLoadFailed');
+  String get copied => _t('copied');
 
   // 统计
   String get summaryUpdated => _t('summaryUpdated');

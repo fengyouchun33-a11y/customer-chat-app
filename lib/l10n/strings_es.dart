@@ -99,6 +99,7 @@ const Map<String, String> esStrings = {
   'allLoaded': 'Se han cargado todas ({0})',
   'agentLabel': 'Agente {0}',
   'unassigned': 'Sin asignar',
+  'anonymous': 'Usuario anónimo',
 
   // Chat
   'senderAgent': 'Agente',
@@ -115,6 +116,10 @@ const Map<String, String> esStrings = {
       'Al cerrar, finaliza la conversación actual del visitante; si respondes después, se reabrirá automáticamente.',
   'conversationClosed': 'Conversación cerrada',
   'conversationReopened': 'Conversación reabierta',
+  'pauseAi': 'Pausar respuestas de IA',
+  'resumeAi': 'Reanudar respuestas de IA',
+  'aiPaused': 'IA en pausa',
+  'aiResumed': 'Respuestas de IA reanudadas',
   'historyForms': 'Historial de formularios ({0})',
   'noForms': 'Sin datos de formulario',
   'formData': 'Datos del formulario',
@@ -134,6 +139,16 @@ const Map<String, String> esStrings = {
   'closedBarHint':
       'Conversación cerrada. Al enviar un mensaje se reabrirá automáticamente',
   'replyHint': 'Escribe una respuesta…',
+  'userInfo': 'Información del usuario',
+  'userName': 'Nombre',
+  'userAccount': 'Cuenta',
+  'userPhone': 'Teléfono',
+  'userEmail': 'Email',
+  'userExternalId': 'ID de usuario externo',
+  'userProject': 'Proyecto',
+  'userRegTime': 'Fecha de registro',
+  'userRemark': 'Nota',
+  'userInfoLoadFailed': 'Error al cargar la información del usuario',
 
   // Estadísticas
   'summaryUpdated': 'Resumen actualizado',
@@ -218,4 +233,5 @@ const Map<String, String> esStrings = {
       'El registro de empresa debe hacerse en el navegador de un PC.\nCopia el enlace y ábrelo en el navegador del PC.\n\nLa app móvil solo sirve para iniciar sesión con una cuenta de empresa registrada.',
   'copyLink': 'Copiar enlace',
   'linkCopied': 'Enlace copiado',
+  'copied': 'Copiado',
 };

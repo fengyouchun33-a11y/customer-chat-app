@@ -101,6 +101,7 @@ const Map<String, String> frStrings = {
   'allLoaded': 'Les {0} conversations sont chargées',
   'agentLabel': 'Agent {0}',
   'unassigned': 'Non attribuée',
+  'anonymous': 'Utilisateur anonyme',
 
   // Chat
   'senderAgent': 'Agent',
@@ -117,6 +118,10 @@ const Map<String, String> frStrings = {
       'La fermeture met fin à la conversation actuelle du visiteur ; une réponse ultérieure la rouvrira automatiquement.',
   'conversationClosed': 'Conversation fermée',
   'conversationReopened': 'Conversation rouverte',
+  'pauseAi': 'Suspendre les réponses IA',
+  'resumeAi': 'Reprendre les réponses IA',
+  'aiPaused': 'IA suspendue',
+  'aiResumed': 'Réponses IA reprises',
   'historyForms': 'Historique des formulaires ({0})',
   'noForms': 'Aucune donnée de formulaire',
   'formData': 'Données du formulaire',
@@ -136,6 +141,16 @@ const Map<String, String> frStrings = {
   'closedBarHint':
       'Conversation fermée. L\'envoi d\'un message la rouvrira automatiquement',
   'replyHint': 'Saisissez une réponse…',
+  'userInfo': 'Informations utilisateur',
+  'userName': 'Nom',
+  'userAccount': 'Compte',
+  'userPhone': 'Téléphone',
+  'userEmail': 'E-mail',
+  'userExternalId': 'ID utilisateur externe',
+  'userProject': 'Projet',
+  'userRegTime': "Date d'inscription",
+  'userRemark': 'Remarque',
+  'userInfoLoadFailed': 'Erreur lors du chargement des informations utilisateur',
 
   // Statistiques
   'summaryUpdated': 'Résumé mis à jour',
@@ -226,4 +241,5 @@ const Map<String, String> frStrings = {
       'L\'inscription d\'une entreprise doit être effectuée dans le navigateur d\'un PC.\nCopiez le lien ci-dessous et ouvrez-le sur un PC.\n\nL\'app mobile sert uniquement à se connecter avec un compte entreprise déjà enregistré.',
   'copyLink': 'Copier le lien',
   'linkCopied': 'Lien copié',
+  'copied': 'Copié',
 };

@@ -98,6 +98,7 @@ const Map<String, String> ptStrings = {
   'allLoaded': 'Todas as {0} foram carregadas',
   'agentLabel': 'Atendente {0}',
   'unassigned': 'Não atribuída',
+  'anonymous': 'Usuário anônimo',
 
   // Chat
   'senderAgent': 'Atendente',
@@ -114,6 +115,10 @@ const Map<String, String> ptStrings = {
       'Fechar encerra a conversa atual do visitante; uma resposta posterior a reabrirá automaticamente.',
   'conversationClosed': 'Conversa fechada',
   'conversationReopened': 'Conversa reaberta',
+  'pauseAi': 'Pausar respostas da IA',
+  'resumeAi': 'Retomar respostas da IA',
+  'aiPaused': 'IA pausada',
+  'aiResumed': 'Respostas da IA retomadas',
   'historyForms': 'Histórico de formulários ({0})',
   'noForms': 'Nenhum dado de formulário',
   'formData': 'Dados do formulário',
@@ -133,6 +138,16 @@ const Map<String, String> ptStrings = {
   'closedBarHint':
       'Conversa fechada. Enviar uma mensagem a reabrirá automaticamente',
   'replyHint': 'Digite uma resposta…',
+  'userInfo': 'Informações do usuário',
+  'userName': 'Nome',
+  'userAccount': 'Conta',
+  'userPhone': 'Telefone',
+  'userEmail': 'E-mail',
+  'userExternalId': 'ID de usuário externo',
+  'userProject': 'Projeto',
+  'userRegTime': 'Data de registro',
+  'userRemark': 'Observação',
+  'userInfoLoadFailed': 'Erro ao carregar as informações do usuário',
 
   // Estatísticas
   'summaryUpdated': 'Resumo atualizado',
@@ -217,4 +232,5 @@ const Map<String, String> ptStrings = {
       'O cadastro de empresa deve ser feito no navegador de um PC.\nCopie o link abaixo e abra-o no navegador do PC.\n\nO app móvel serve apenas para entrar com uma conta de empresa cadastrada.',
   'copyLink': 'Copiar link',
   'linkCopied': 'Link copiado',
+  'copied': 'Copiado',
 };

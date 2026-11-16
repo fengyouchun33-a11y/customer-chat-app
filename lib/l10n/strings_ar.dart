@@ -97,6 +97,7 @@ const Map<String, String> arStrings = {
   'allLoaded': 'تم تحميل الكل ({0})',
   'agentLabel': 'الموظف {0}',
   'unassigned': 'غير مُسند',
+  'anonymous': 'مستخدم مجهول',
 
   // الدردشة
   'senderAgent': 'الموظف',
@@ -113,6 +114,10 @@ const Map<String, String> arStrings = {
       'الإغلاق ينهي المحادثة الحالية لدى الزائر؛ والرد لاحقًا سيعيد فتحها تلقائيًا.',
   'conversationClosed': 'تم إغلاق المحادثة',
   'conversationReopened': 'تمت إعادة فتح المحادثة',
+  'pauseAi': 'إيقاف ردود الذكاء الاصطناعي',
+  'resumeAi': 'استئناف ردود الذكاء الاصطناعي',
+  'aiPaused': 'الذكاء الاصطناعي متوقف',
+  'aiResumed': 'تم استئناف ردود الذكاء الاصطناعي',
   'historyForms': 'سجل النماذج ({0})',
   'noForms': 'لا توجد بيانات نماذج',
   'formData': 'بيانات النموذج',
@@ -131,6 +136,16 @@ const Map<String, String> arStrings = {
   'openLinkFailed': 'لا يمكن فتح الرابط: {0}',
   'closedBarHint': 'المحادثة مغلقة. إرسال رسالة سيعيد فتحها تلقائيًا',
   'replyHint': 'اكتب ردًا…',
+  'userInfo': 'معلومات المستخدم',
+  'userName': 'الاسم',
+  'userAccount': 'الحساب',
+  'userPhone': 'الهاتف',
+  'userEmail': 'البريد الإلكتروني',
+  'userExternalId': 'معرف المستخدم الخارجي',
+  'userProject': 'المشروع',
+  'userRegTime': 'تاريخ التسجيل',
+  'userRemark': 'ملاحظة',
+  'userInfoLoadFailed': 'فشل تحميل معلومات المستخدم',
 
   // الإحصاءات
   'summaryUpdated': 'تم تحديث الملخص',
@@ -212,4 +227,5 @@ const Map<String, String> arStrings = {
       'يجب إتمام تسجيل الشركة من متصفح على جهاز كمبيوتر.\nانسخ الرابط أدناه وافتحه في متصفح الكمبيوتر.\n\nتطبيق الجوال مخصص لتسجيل الدخول بحساب شركة مسجّل فقط.',
   'copyLink': 'نسخ الرابط',
   'linkCopied': 'تم نسخ الرابط',
+  'copied': 'تم النسخ',
 };

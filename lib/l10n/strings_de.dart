@@ -98,6 +98,7 @@ const Map<String, String> deStrings = {
   'allLoaded': 'Alle {0} geladen',
   'agentLabel': 'Agent {0}',
   'unassigned': 'Nicht zugewiesen',
+  'anonymous': 'Anonymer Benutzer',
 
   // Chat
   'senderAgent': 'Agent',
@@ -114,6 +115,10 @@ const Map<String, String> deStrings = {
       'Beim Schließen endet das aktuelle Gespräch für den Besucher; eine spätere Antwort öffnet es automatisch wieder.',
   'conversationClosed': 'Gespräch geschlossen',
   'conversationReopened': 'Gespräch wieder geöffnet',
+  'pauseAi': 'KI-Antworten pausieren',
+  'resumeAi': 'KI-Antworten fortsetzen',
+  'aiPaused': 'KI pausiert',
+  'aiResumed': 'KI-Antworten fortgesetzt',
   'historyForms': 'Formularverlauf ({0})',
   'noForms': 'Keine Formulardaten',
   'formData': 'Formulardaten',
@@ -133,6 +138,16 @@ const Map<String, String> deStrings = {
   'closedBarHint':
       'Gespräch geschlossen. Beim Senden einer Nachricht wird es automatisch wieder geöffnet',
   'replyHint': 'Antwort eingeben…',
+  'userInfo': 'Benutzerinformationen',
+  'userName': 'Name',
+  'userAccount': 'Konto',
+  'userPhone': 'Telefon',
+  'userEmail': 'E-Mail',
+  'userExternalId': 'Externe Benutzer-ID',
+  'userProject': 'Projekt',
+  'userRegTime': 'Registriert',
+  'userRemark': 'Bemerkung',
+  'userInfoLoadFailed': 'Fehler beim Laden der Benutzerinformationen',
 
   // Statistik
   'summaryUpdated': 'Zusammenfassung aktualisiert',
@@ -218,4 +233,5 @@ const Map<String, String> deStrings = {
       'Die Firmenregistrierung muss im Browser auf einem PC erfolgen.\nKopieren Sie den Link und öffnen Sie ihn im PC-Browser.\n\nDie mobile App dient nur zur Anmeldung mit einem registrierten Firmenkonto.',
   'copyLink': 'Link kopieren',
   'linkCopied': 'Link kopiert',
+  'copied': 'Kopiert',
 };

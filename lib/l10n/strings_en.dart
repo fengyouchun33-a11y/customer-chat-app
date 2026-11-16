@@ -97,6 +97,7 @@ const Map<String, String> enStrings = {
   'allLoaded': 'All {0} loaded',
   'agentLabel': 'Agent {0}',
   'unassigned': 'Unassigned',
+  'anonymous': 'Anonymous',
 
   // Chat
   'senderAgent': 'Agent',
@@ -113,6 +114,10 @@ const Map<String, String> enStrings = {
       'Closing ends the current conversation for the visitor; replying later will reopen it automatically.',
   'conversationClosed': 'Conversation closed',
   'conversationReopened': 'Conversation reopened',
+  'pauseAi': 'Pause AI replies',
+  'resumeAi': 'Resume AI replies',
+  'aiPaused': 'AI paused',
+  'aiResumed': 'AI replies resumed',
   'historyForms': 'Form history ({0})',
   'noForms': 'No form data',
   'formData': 'Form data',
@@ -132,6 +137,16 @@ const Map<String, String> enStrings = {
   'closedBarHint':
       'Conversation closed. Sending a message will reopen it automatically',
   'replyHint': 'Type a reply…',
+  'userInfo': 'User Info',
+  'userName': 'Name',
+  'userAccount': 'Account',
+  'userPhone': 'Phone',
+  'userEmail': 'Email',
+  'userExternalId': 'External User ID',
+  'userProject': 'Project',
+  'userRegTime': 'Registered',
+  'userRemark': 'Remark',
+  'userInfoLoadFailed': 'Failed to load user info',
 
   // Stats
   'summaryUpdated': 'Summary updated',
@@ -212,4 +227,5 @@ const Map<String, String> enStrings = {
       'Company registration must be completed in a desktop browser.\nCopy the link below and open it on a PC.\n\nThe mobile app is only for signing in with a registered company account.',
   'copyLink': 'Copy link',
   'linkCopied': 'Link copied',
+  'copied': 'Copied',
 };

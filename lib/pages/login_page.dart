@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_strings.dart';
@@ -371,6 +372,8 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 18),
+                      const Center(child: AppVersionLabel()),
                     ],
                   ),
                 ),
@@ -379,6 +382,42 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 登录页底部版本号：从包信息读取（与 pubspec version 保持一致），
+/// 方便排查用户安装的版本；拿不到包信息（异常/测试环境）时不显示。
+class AppVersionLabel extends StatefulWidget {
+  const AppVersionLabel({super.key});
+
+  @override
+  State<AppVersionLabel> createState() => _AppVersionLabelState();
+}
+
+class _AppVersionLabelState extends State<AppVersionLabel> {
+  String? _text;
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (!mounted) return;
+      setState(() {
+        final build = info.buildNumber;
+        _text = build.isEmpty ? info.version : '${info.version} ($build)';
+      });
+    }).catchError((_) {
+      // 异常环境下读不到包信息就不显示，不影响登录
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_text == null) return const SizedBox.shrink();
+    return Text(
+      'v$_text',
+      style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
     );
   }
 }

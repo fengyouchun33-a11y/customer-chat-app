@@ -93,6 +93,7 @@ const Map<String, String> jaStrings = {
   'allLoaded': '全 {0} 件を読み込みました',
   'agentLabel': '担当 {0}',
   'unassigned': '未割り当て',
+  'anonymous': '匿名ユーザー',
 
   // チャット
   'senderAgent': '担当者',
@@ -108,6 +109,10 @@ const Map<String, String> jaStrings = {
   'closeConversationBody': '終了すると訪問者側の現在の会話が終わります。その後返信すると自動的に再開されます。',
   'conversationClosed': '会話を終了しました',
   'conversationReopened': '会話を再開しました',
+  'pauseAi': 'AI回答を停止',
+  'resumeAi': 'AI回答を再開',
+  'aiPaused': 'AI停止中',
+  'aiResumed': 'AI回答を再開しました',
   'historyForms': '過去のフォームデータ（{0}）',
   'noForms': 'フォームデータがありません',
   'formData': 'フォームデータ',
@@ -126,6 +131,16 @@ const Map<String, String> jaStrings = {
   'openLinkFailed': 'リンクを開けません：{0}',
   'closedBarHint': '会話は終了済みです。メッセージを送信すると自動的に再開されます',
   'replyHint': '返信内容を入力…',
+  'userInfo': 'ユーザー情報',
+  'userName': '名前',
+  'userAccount': 'アカウント',
+  'userPhone': '電話番号',
+  'userEmail': 'メール',
+  'userExternalId': '外部ユーザーID',
+  'userProject': '所属プロジェクト',
+  'userRegTime': '登録日時',
+  'userRemark': '備考',
+  'userInfoLoadFailed': 'ユーザー情報の読み込みに失敗しました',
 
   // 統計
   'summaryUpdated': 'まとめを更新しました',
@@ -202,4 +217,5 @@ const Map<String, String> jaStrings = {
       '企業登録は PC のブラウザで行ってください。\n下のリンクをコピーして PC ブラウザで開いてください。\n\nモバイルアプリは登録済みの企業アカウントのログイン専用です。',
   'copyLink': 'リンクをコピー',
   'linkCopied': 'リンクをコピーしました',
+  'copied': 'コピーしました',
 };

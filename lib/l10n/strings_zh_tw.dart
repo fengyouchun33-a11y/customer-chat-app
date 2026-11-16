@@ -93,6 +93,7 @@ const Map<String, String> zhTwStrings = {
   'allLoaded': '已載入全部 {0} 筆',
   'agentLabel': '客服 {0}',
   'unassigned': '待分配',
+  'anonymous': '匿名使用者',
 
   // 聊天
   'senderAgent': '客服',
@@ -108,6 +109,10 @@ const Map<String, String> zhTwStrings = {
   'closeConversationBody': '關閉後訪客端將結束目前會話；之後再回覆會自動重新開啟。',
   'conversationClosed': '會話已關閉',
   'conversationReopened': '會話已重新開啟',
+  'pauseAi': '暫停AI回答',
+  'resumeAi': '恢復AI回答',
+  'aiPaused': 'AI已暫停',
+  'aiResumed': '已恢復AI回答',
   'historyForms': '歷史表單資料（{0}）',
   'noForms': '暫無表單資料',
   'formData': '表單資料',
@@ -126,6 +131,16 @@ const Map<String, String> zhTwStrings = {
   'openLinkFailed': '無法開啟連結：{0}',
   'closedBarHint': '會話已關閉，傳送訊息將自動重新開啟',
   'replyHint': '輸入回覆內容…',
+  'userInfo': '使用者資訊',
+  'userName': '姓名',
+  'userAccount': '帳號',
+  'userPhone': '手機號碼',
+  'userEmail': '信箱',
+  'userExternalId': '外部用戶ID',
+  'userProject': '所屬專案',
+  'userRegTime': '註冊時間',
+  'userRemark': '備註',
+  'userInfoLoadFailed': '使用者資訊載入失敗',
 
   // 統計
   'summaryUpdated': '總結已更新',
@@ -201,4 +216,5 @@ const Map<String, String> zhTwStrings = {
   'registerBody': '企業註冊需在電腦瀏覽器中完成。\n請複製下方連結，並在 PC 瀏覽器中開啟。\n\n行動端僅供已註冊的企業帳號登入。',
   'copyLink': '複製連結',
   'linkCopied': '已複製連結',
+  'copied': '已複製',
 };

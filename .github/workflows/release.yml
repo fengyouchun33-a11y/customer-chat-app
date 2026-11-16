@@ -3,11 +3,16 @@ name: build release artifacts
 # 手动触发，或推一个 v 开头的 tag（打 tag 即出包）。
 # AAB 与 IPA 是两个独立 job：Android 跑在 ubuntu 上，iOS 只能在 macOS 上跑，
 # 二者互不阻塞，任一签名材料有问题时另一个仍能出包。
+# 打 v 开头的 tag 时，额外生成同名 GitHub Release 并把两件产物挂上去。
 on:
   workflow_dispatch:
   push:
     tags:
       - "v*"
+
+# 创建 GitHub Release 需要写 contents 权限；产物上传不涉及
+permissions:
+  contents: write
 
 jobs:
   android:
@@ -133,3 +138,39 @@ jobs:
           name: app-release-ipa
           path: build/ios/ipa/*.ipa
           if-no-files-found: error
+
+  # 打 v 开头的 tag 时把 AAB/IPA 挂到对应版本的 GitHub Release 页。
+  # 只依赖 android job：iOS 构建失败(如缺证书)时 AAB 仍能发版，产物缺失的侧自动跳过。
+  release:
+    needs: [ android ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-release-aab
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-release-ipa
+          path: dist
+        # iOS 构建失败时该 artifact 不存在，跳过不阻塞发版
+        continue-on-error: true
+
+      - name: rename artifacts with version
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -f dist/app-release-aab/app-release.aab ] \
+            && mv dist/app-release-aab/app-release.aab "dist/keiyo-chat-app-${VERSION}.aab"
+          if ls dist/app-release-ipa/*.ipa >/dev/null 2>&1; then
+            mv "$(ls dist/app-release-ipa/*.ipa)" "dist/keiyo-chat-app-${VERSION}.ipa"
+          fi
+          ls -la dist/
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          files: dist/*
+          generate_release_notes: true

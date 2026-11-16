@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../l10n/app_strings.dart';
 import '../utils/format.dart';
 
 int asInt(dynamic v, [int fallback = 0]) {
@@ -182,9 +183,13 @@ class Conversation {
   final int projectId;
   final String convKey;
   final String visitorId;
+  /// 绑定同步用户 id(开放接口创建, 0=匿名访客); 仅 user_id>0 时能查用户档案
+  final int userId;
   final String userName;
   final String title;
   final int status;
+  /// 客服手动暂停AI回答(0=否 1=是); 与转人工状态独立, 不依赖访客转人工
+  final int aiPaused;
   final int agentId;
   final String agentName;
   final int adminUnread;
@@ -200,9 +205,11 @@ class Conversation {
     required this.projectId,
     required this.convKey,
     required this.visitorId,
+    required this.userId,
     required this.userName,
     required this.title,
     required this.status,
+    required this.aiPaused,
     required this.agentId,
     required this.agentName,
     required this.adminUnread,
@@ -215,20 +222,28 @@ class Conversation {
   String get displayTitle {
     if (title.isNotEmpty) return title;
     if (userName.isNotEmpty) return userName;
-    return visitorId;
+    if (visitorId.isNotEmpty) return visitorId;
+    // 与 Web 管理端一致：会话标题/用户名都为空时用「匿名用户」兜底
+    return AppStrings.current.anonymous;
   }
 
-  String get userLabel => userName.isNotEmpty ? userName : visitorId;
+  String get userLabel {
+    if (userName.isNotEmpty) return userName;
+    if (visitorId.isNotEmpty) return visitorId;
+    return AppStrings.current.anonymous;
+  }
 
-  Conversation copyWith({int? status, int? agentId, String? agentName, int? adminUnread}) {
+  Conversation copyWith({int? status, int? aiPaused, int? agentId, String? agentName, int? adminUnread}) {
     return Conversation(
       id: id,
       projectId: projectId,
       convKey: convKey,
       visitorId: visitorId,
+      userId: userId,
       userName: userName,
       title: title,
       status: status ?? this.status,
+      aiPaused: aiPaused ?? this.aiPaused,
       agentId: agentId ?? this.agentId,
       agentName: agentName ?? this.agentName,
       adminUnread: adminUnread ?? this.adminUnread,
@@ -244,9 +259,11 @@ class Conversation {
         projectId: asInt(m['project_id']),
         convKey: asString(m['conv_key']),
         visitorId: asString(m['visitor_id']),
+        userId: asInt(m['user_id']),
         userName: asString(m['user_name']),
         title: asString(m['title']),
         status: asInt(m['status']),
+        aiPaused: asInt(m['ai_paused']),
         agentId: asInt(m['agent_id']),
         agentName: asString(m['agent_name']),
         adminUnread: asInt(m['admin_unread']),
@@ -256,6 +273,43 @@ class Conversation {
         lastMsg: asString(m['last_msg']).isNotEmpty
             ? asString(m['last_msg'])
             : asString(m['preview']),
+      );
+}
+
+/// 用户档案（会话中心"查看用户信息"）：/admin/user/detail 返回的 chat_user 行
+class UserDetail {
+  final int id;
+  final String account;
+  final String name;
+  final String phone;
+  final String email;
+  final String avatar;
+  final String externalUserId;
+  final String remark;
+  final DateTime? createTime;
+
+  const UserDetail({
+    required this.id,
+    required this.account,
+    required this.name,
+    required this.phone,
+    required this.email,
+    required this.avatar,
+    required this.externalUserId,
+    required this.remark,
+    required this.createTime,
+  });
+
+  factory UserDetail.fromJson(Map<String, dynamic> m) => UserDetail(
+        id: asInt(m['id']),
+        account: asString(m['account']),
+        name: asString(m['name']),
+        phone: asString(m['phone']),
+        email: asString(m['email']),
+        avatar: asString(m['avatar']),
+        externalUserId: asString(m['external_user_id']),
+        remark: asString(m['remark']),
+        createTime: parseServerTime(m['create_time']),
       );
 }
 

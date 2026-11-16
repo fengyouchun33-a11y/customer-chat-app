@@ -93,6 +93,7 @@ const Map<String, String> zhCnStrings = {
   'allLoaded': '已加载全部 {0} 条',
   'agentLabel': '客服 {0}',
   'unassigned': '待分配',
+  'anonymous': '匿名用户',
 
   // 聊天
   'senderAgent': '客服',
@@ -108,6 +109,10 @@ const Map<String, String> zhCnStrings = {
   'closeConversationBody': '关闭后访客端将结束当前会话；之后再回复会自动重新打开。',
   'conversationClosed': '会话已关闭',
   'conversationReopened': '会话已重新打开',
+  'pauseAi': '暂停AI回答',
+  'resumeAi': '恢复AI回答',
+  'aiPaused': 'AI已暂停',
+  'aiResumed': '已恢复AI回答',
   'historyForms': '历史表单数据（{0}）',
   'noForms': '暂无表单数据',
   'formData': '表单数据',
@@ -126,6 +131,16 @@ const Map<String, String> zhCnStrings = {
   'openLinkFailed': '无法打开链接：{0}',
   'closedBarHint': '会话已关闭，发送消息将自动重新打开',
   'replyHint': '输入回复内容…',
+  'userInfo': '用户信息',
+  'userName': '姓名',
+  'userAccount': '账号',
+  'userPhone': '手机号',
+  'userEmail': '邮箱',
+  'userExternalId': '外部用户ID',
+  'userProject': '所属项目',
+  'userRegTime': '注册时间',
+  'userRemark': '备注',
+  'userInfoLoadFailed': '用户信息加载失败',
 
   // 统计
   'summaryUpdated': '总结已更新',
@@ -201,4 +216,5 @@ const Map<String, String> zhCnStrings = {
   'registerBody': '企业注册需在电脑浏览器中完成。\n请复制下方链接，并在 PC 浏览器中打开。\n\n手机端仅用于已注册的企业账号登录。',
   'copyLink': '复制链接',
   'linkCopied': '链接已复制',
+  'copied': '已复制',
 };

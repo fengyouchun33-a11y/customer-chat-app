@@ -802,10 +802,8 @@ class _StatsPageState extends State<StatsPage> {
             ),
             const SizedBox(height: 10),
             Text(
-              s.summaryMeta(
-                summary.model.isEmpty ? '—' : summary.model,
-                fmtDateTime(summary.updateTime),
-              ),
+              // 不对外暴露具体模型品牌(如 deepseek-chat), 统一显示为通用 AI 标签
+              s.summaryMeta('AI', fmtDateTime(summary.updateTime)),
               style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
             ),
           ] else ...[

@@ -93,6 +93,7 @@ const Map<String, String> koStrings = {
   'allLoaded': '총 {0}건을 모두 불러왔습니다',
   'agentLabel': '상담원 {0}',
   'unassigned': '배정 대기',
+  'anonymous': '익명 사용자',
 
   // 채팅
   'senderAgent': '상담원',
@@ -108,6 +109,10 @@ const Map<String, String> koStrings = {
   'closeConversationBody': '종료하면 방문자 측의 현재 상담이 끝납니다. 이후 답장하면 자동으로 다시 열립니다.',
   'conversationClosed': '상담이 종료되었습니다',
   'conversationReopened': '상담이 다시 열렸습니다',
+  'pauseAi': 'AI 답변 중지',
+  'resumeAi': 'AI 답변 재개',
+  'aiPaused': 'AI 중지됨',
+  'aiResumed': 'AI 답변이 재개되었습니다',
   'historyForms': '이전 양식 데이터({0})',
   'noForms': '양식 데이터가 없습니다',
   'formData': '양식 데이터',
@@ -126,6 +131,16 @@ const Map<String, String> koStrings = {
   'openLinkFailed': '링크를 열 수 없습니다: {0}',
   'closedBarHint': '상담이 종료되었습니다. 메시지를 보내면 자동으로 다시 열립니다',
   'replyHint': '답장 내용을 입력…',
+  'userInfo': '사용자 정보',
+  'userName': '이름',
+  'userAccount': '계정',
+  'userPhone': '휴대폰 번호',
+  'userEmail': '이메일',
+  'userExternalId': '외부 사용자 ID',
+  'userProject': '소속 프로젝트',
+  'userRegTime': '가입 시간',
+  'userRemark': '비고',
+  'userInfoLoadFailed': '사용자 정보를 불러오지 못했습니다',
 
   // 통계
   'summaryUpdated': '요약이 업데이트되었습니다',
@@ -203,4 +218,5 @@ const Map<String, String> koStrings = {
       '기업 등록은 PC 브라우저에서 완료해야 합니다.\n아래 링크를 복사하여 PC 브라우저에서 여세요.\n\n모바일 앱은 등록된 기업 계정 로그인 전용입니다.',
   'copyLink': '링크 복사',
   'linkCopied': '링크가 복사되었습니다',
+  'copied': '복사되었습니다',
 };

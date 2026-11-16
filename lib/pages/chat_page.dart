@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart' show FormData, MultipartFile;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -67,6 +69,9 @@ class _ChatPageState extends State<ChatPage> {
   // 已加载消息里的最小 id，翻更早一页时作为 before_id 传给服务端
   int _oldestLoadedId = 0;
   Timer? _poll;
+  // 用户档案（查看用户信息用）：仅开放接口创建的会话(userId>0)可查，与 Web 管理端口径一致
+  UserDetail? _userDetail;
+  bool _userLoading = false;
 
   static final MarkdownStyleSheet _mdStyle = MarkdownStyleSheet(
     p: const TextStyle(fontSize: 13.5, height: 1.55, color: AppColors.text),
@@ -187,6 +192,7 @@ class _ChatPageState extends State<ChatPage> {
         if (conv != null) {
           _conv = _conv.copyWith(
             status: asInt(conv['status'], _conv.status),
+            aiPaused: asInt(conv['ai_paused'], _conv.aiPaused),
             agentId: asInt(conv['agent_id'], _conv.agentId),
           );
         }
@@ -548,6 +554,28 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  /// 手动暂停/恢复AI回答: 不依赖访客转人工, 不改会话状态
+  Future<void> _toggleAi() async {
+    if (_actionBusy) return;
+    final pausing = _conv.aiPaused != 1;
+    final api = context.read<AppState>().api;
+    setState(() => _actionBusy = true);
+    try {
+      await api.post(
+        '/admin/conversation/toggle-ai',
+        data: {'conv_key': _conv.convKey, 'paused': pausing ? 1 : 0},
+      );
+      if (!mounted) return;
+      setState(() => _conv = _conv.copyWith(aiPaused: pausing ? 1 : 0));
+      final s = AppStrings.current;
+      showSnack(context, pausing ? s.aiPaused : s.aiResumed);
+    } catch (e) {
+      if (mounted) showSnack(context, e.toString(), error: true);
+    } finally {
+      if (mounted) setState(() => _actionBusy = false);
+    }
+  }
+
   void _retry() {
     setState(() {
       _loading = true;
@@ -617,6 +645,93 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  /// 拉取会话对象的用户档案并弹出信息面板（对应 Web 管理端「查看用户信息」）
+  Future<void> _openUserInfo() async {
+    if (_userLoading) return;
+    final api = context.read<AppState>().api;
+    setState(() {
+      _userLoading = true;
+      _userDetail = null;
+    });
+    try {
+      final data = await api.get('/admin/user/detail', query: {'id': _conv.userId});
+      if (!mounted) return;
+      setState(() {
+        _userDetail =
+            data is Map ? UserDetail.fromJson(Map<String, dynamic>.from(data)) : null;
+        _userLoading = false;
+      });
+      _showUserInfoSheet();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _userLoading = false);
+      showSnack(context, AppStrings.current.userInfoLoadFailed, error: true);
+    }
+  }
+
+  /// 用户信息面板：字段与 Web 管理端弹窗一致（姓名/账号/手机号/邮箱/外部用户ID/项目/注册时间/备注）
+  void _showUserInfoSheet() {
+    final detail = _userDetail;
+    if (detail == null) return;
+    final s = AppStrings.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(top: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.borderStrong,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  s.userInfo,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+              const Divider(height: 1),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                  child: Column(
+                    children: [
+                      _UserInfoRow(label: s.userName, value: detail.name.isEmpty ? '-' : detail.name),
+                      _UserInfoRow(label: s.userAccount, value: detail.account.isEmpty ? '-' : detail.account),
+                      _UserInfoRow(label: s.userPhone, value: detail.phone.isEmpty ? '-' : detail.phone),
+                      _UserInfoRow(label: s.userEmail, value: detail.email.isEmpty ? '-' : detail.email),
+                      _UserInfoRow(
+                          label: s.userExternalId,
+                          value: detail.externalUserId.isEmpty ? '-' : detail.externalUserId),
+                      _UserInfoRow(label: s.userProject, value: _conv.projectName.isEmpty ? '-' : _conv.projectName),
+                      _UserInfoRow(
+                          label: s.userRegTime,
+                          value: detail.createTime == null ? '-' : fmtDateTime(detail.createTime)),
+                      if (detail.remark.isNotEmpty)
+                        _UserInfoRow(label: s.userRemark, value: detail.remark),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
@@ -644,6 +759,22 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                   const SizedBox(width: 8),
                   StatusPill(status: _conv.status, compact: true),
+                  // AI被手动暂停时挂个警示胶囊, 客服一眼能看出这条会话机器人不再接话
+                  if (_conv.aiPaused == 1 && _conv.status != 2) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.signal.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: AppColors.signal.withValues(alpha: 0.35)),
+                      ),
+                      child: Text(
+                        s.aiPaused,
+                        style: const TextStyle(color: AppColors.signal, fontSize: 10, height: 1.2),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 2),
@@ -657,6 +788,13 @@ class _ChatPageState extends State<ChatPage> {
           ),
         ),
         actions: [
+          // 仅开放接口创建的会话(userId>0)才有用户档案，与 Web 管理端的按钮显示条件一致
+          if (_conv.userId > 0)
+            IconButton(
+              tooltip: s.userInfo,
+              onPressed: _openUserInfo,
+              icon: const Icon(Icons.person_outline, size: 20, color: AppColors.textDim),
+            ),
           if (_formMessages.isNotEmpty)
             IconButton(
               tooltip: s.formData,
@@ -673,6 +811,8 @@ class _ChatPageState extends State<ChatPage> {
                 _loadMessages(silent: true, follow: true);
               } else if (v == 'status') {
                 _toggleStatus();
+              } else if (v == 'ai') {
+                _toggleAi();
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
@@ -697,6 +837,20 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                     const SizedBox(width: 10),
                     Text(_conv.status == 2 ? s.reopenConversation : s.closeConversation),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'ai',
+                child: Row(
+                  children: [
+                    Icon(
+                      _conv.aiPaused == 1 ? Icons.play_circle_outline : Icons.pause_circle_outline,
+                      size: 17,
+                      color: AppColors.textDim,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(_conv.aiPaused == 1 ? s.resumeAi : s.pauseAi),
                   ],
                 ),
               ),
@@ -1305,6 +1459,97 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 用户信息面板行：点击值即可复制（占位符"-"不可复制）
+/// 复制后尾部图标短暂变绿色对勾：SnackBar 会被底部弹窗遮挡，改用行内反馈
+class _UserInfoRow extends StatefulWidget {
+  const _UserInfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  State<_UserInfoRow> createState() => _UserInfoRowState();
+}
+
+class _UserInfoRowState extends State<_UserInfoRow> {
+  bool _copied = false;
+  Timer? _resetTimer;
+
+  @override
+  void dispose() {
+    _resetTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: widget.value));
+    if (!mounted) return;
+    setState(() => _copied = true);
+    _resetTimer?.cancel();
+    _resetTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() => _copied = false);
+    });
+    SemanticsService.sendAnnouncement(
+        View.of(context), AppStrings.current.copied, TextDirection.ltr);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final copyable = widget.value != '-';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 96,
+            child: Text(
+              widget.label,
+              style: const TextStyle(fontSize: 12, color: AppColors.textDim, height: 1.5),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: copyable
+                ? InkWell(
+                    onTap: _copy,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.value,
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.text, height: 1.5),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Icon(
+                              _copied ? Icons.check_rounded : Icons.copy_rounded,
+                              size: 13,
+                              color: _copied ? AppColors.ok : AppColors.textMute,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Text(
+                    widget.value,
+                    style: const TextStyle(fontSize: 12, color: AppColors.text, height: 1.5),
+                  ),
+          ),
+        ],
       ),
     );
   }
