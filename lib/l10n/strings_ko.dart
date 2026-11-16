@@ -1,6 +1,6 @@
 // 한국어 문구. 자리표시자는 {0}, {1} 형식입니다.
 const Map<String, String> koStrings = {
-  'appName': '지능형 고객센터',
+  'appName': 'xChat',
   'workbenchTitle': '상담 워크벤치',
   'cancel': '취소',
   'retry': '다시 시도',

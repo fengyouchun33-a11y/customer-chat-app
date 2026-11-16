@@ -1,6 +1,6 @@
 // Deutsche Texte. Platzhalter haben die Form {0}, {1}.
 const Map<String, String> deStrings = {
-  'appName': 'Intelligenter Support',
+  'appName': 'xChat',
   'workbenchTitle': 'Support-Arbeitsplatz',
   'cancel': 'Abbrechen',
   'retry': 'Erneut versuchen',

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 默认（所有非中文环境）显示 xChat；中文由 values-zh / values-zh-rTW 覆盖 -->
+    <string name="app_name">xChat</string>
+</resources>

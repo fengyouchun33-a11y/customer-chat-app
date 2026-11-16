@@ -1,6 +1,6 @@
 // Textos en español. Los marcadores de posición usan {0}, {1}.
 const Map<String, String> esStrings = {
-  'appName': 'Atención inteligente',
+  'appName': 'xChat',
   'workbenchTitle': 'Central de soporte',
   'cancel': 'Cancelar',
   'retry': 'Reintentar',

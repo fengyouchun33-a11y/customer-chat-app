@@ -992,7 +992,7 @@ class _ChatPageState extends State<ChatPage> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppColors.border),
           ),
-          child: Text(
+          child: SelectableText(
             m.content,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 10.5, color: AppColors.textMute, height: 1.4),
@@ -1113,7 +1113,7 @@ class _ChatPageState extends State<ChatPage> {
             const SizedBox(height: 6),
             MarkdownBody(
               data: text,
-              selectable: false,
+              selectable: true,
               styleSheet: _mdStyle,
               sizedImageBuilder: _markdownImage,
             ),
@@ -1123,7 +1123,7 @@ class _ChatPageState extends State<ChatPage> {
     } else {
       body = MarkdownBody(
         data: text.isEmpty ? ' ' : text,
-        selectable: false,
+        selectable: true,
         styleSheet: _mdStyle,
         sizedImageBuilder: _markdownImage,
       );

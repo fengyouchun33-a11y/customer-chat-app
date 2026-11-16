@@ -1,6 +1,6 @@
 // Русские тексты. Плейсхолдеры имеют вид {0}, {1}.
 const Map<String, String> ruStrings = {
-  'appName': 'Умная поддержка',
+  'appName': 'xChat',
   'workbenchTitle': 'Рабочее место поддержки',
   'cancel': 'Отмена',
   'retry': 'Повторить',

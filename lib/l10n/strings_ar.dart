@@ -1,6 +1,6 @@
 // نصوص عربية. العناصر البديلة بالصيغة {0} و{1}.
 const Map<String, String> arStrings = {
-  'appName': 'الدعم الذكي',
+  'appName': 'xChat',
   'workbenchTitle': 'مساحة عمل الدعم',
   'cancel': 'إلغاء',
   'retry': 'إعادة المحاولة',

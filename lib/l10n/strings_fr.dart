@@ -1,6 +1,6 @@
 // Textes en français. Les espaces réservés utilisent {0}, {1}.
 const Map<String, String> frStrings = {
-  'appName': 'Support intelligent',
+  'appName': 'xChat',
   'workbenchTitle': 'Console de support',
   'cancel': 'Annuler',
   'retry': 'Réessayer',

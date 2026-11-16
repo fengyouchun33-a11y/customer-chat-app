@@ -1,6 +1,6 @@
 // 日本語の文言。プレースホルダーは {0}、{1} の形式です。
 const Map<String, String> jaStrings = {
-  'appName': 'スマートサポート',
+  'appName': 'xChat',
   'workbenchTitle': 'サポートワークベンチ',
   'cancel': 'キャンセル',
   'retry': '再試行',

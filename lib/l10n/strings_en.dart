@@ -1,6 +1,6 @@
 // English strings. Placeholders use the form {0}, {1}.
 const Map<String, String> enStrings = {
-  'appName': 'Smart Support',
+  'appName': 'xChat',
   'workbenchTitle': 'Support Workbench',
   'cancel': 'Cancel',
   'retry': 'Retry',
