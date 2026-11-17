@@ -101,6 +101,15 @@ const Map<String, String> frStrings = {
   'allLoaded': 'Les {0} conversations sont chargées',
   'agentLabel': 'Agent {0}',
   'unassigned': 'Non attribuée',
+  'assign': 'Attribuer un agent',
+  'reassign': 'Transférer à un autre agent',
+  'assignTip': 'Seuls les membres activés, participant à l\'attribution et autorisés pour ce projet sont listés (les admins de tenant ne sont pas limités par projet). Les membres hors ligne ou hors plage peuvent être attribués, mais le visiteur attendra leur retour en ligne.',
+  'assignEmpty': 'Aucun membre attribuable : dans Membres, autorisez ce projet et activez la participation à l\'attribution',
+  'assignCurrent': 'Actuel',
+  'assignOffDuty': 'Hors plage',
+  'agentLoad': '{0} en cours',
+  'assignDone': 'Attribué à {0}',
+  'confirm': 'Confirmer',
   'anonymous': 'Utilisateur anonyme',
 
   // Chat
@@ -141,6 +150,12 @@ const Map<String, String> frStrings = {
   'closedBarHint':
       'Conversation fermée. L\'envoi d\'un message la rouvrira automatiquement',
   'replyHint': 'Saisissez une réponse…',
+  'attachImage': 'Image',
+  'previewTranslation': 'Aperçu de la traduction',
+  'visitorWillSee': 'Ce que recevra le visiteur (modifiable)',
+  'retranslate': 'Retraduire',
+  'translationSameLang': 'Déjà dans la langue du visiteur',
+  'translationStale': 'Texte source modifié, traduction à mettre à jour',
   'userInfo': 'Informations utilisateur',
   'userName': 'Nom',
   'userAccount': 'Compte',
@@ -236,10 +251,26 @@ const Map<String, String> frStrings = {
   'loginIntroEntry': 'Présentation de la plateforme',
   'loginRegisterEntry': 'Inscription entreprise',
   'introBody':
-      'Une plateforme de support client complète, du back-office web à l\'app mobile\n\n· Réception multicanal : les demandes des clients venant du site web, de l\'app et des mini-programmes sont réunies dans un seul espace de travail\n· Back-office entreprise : après inscription, configurez les règles de réception, les équipes d\'agents et la base de connaissances dans le back-office web\n· Service mobile : les conversations sont poussées en temps réel sur le téléphone ; même en déplacement, vous pouvez prendre le relais, attribuer et répondre\n· Tableau de bord : volume de conversations, temps de première réponse et tendances de satisfaction en un coup d\'œil\n· Disponible partout : 11 langues suivent automatiquement le système, pour les équipes internationales\n\nComment démarrer : ouvrez d\'abord support.breathmeters.net dans un navigateur sur PC pour enregistrer votre entreprise et configurer le back-office, puis connectez-vous à cette app avec le même compte entreprise pour assurer le service.',
+      'Une plateforme de support client complète, du back-office web à l\'app mobile\n\n· Réception multicanal : les demandes des clients venant du site web, de l\'app et des mini-programmes sont réunies dans un seul espace de travail\n· Back-office entreprise : après inscription, configurez les règles de réception, les équipes d\'agents et la base de connaissances dans le back-office web\n· Service mobile : les conversations sont poussées en temps réel sur le téléphone ; même en déplacement, vous pouvez prendre le relais, attribuer et répondre\n· Tableau de bord : volume de conversations, temps de première réponse et tendances de satisfaction en un coup d\'œil\n· Disponible partout : 11 langues suivent automatiquement le système, pour les équipes internationales\n\nComment démarrer : ouvrez d\'abord support.breathmeters.net dans un navigateur sur PC pour enregistrer votre entreprise et configurer le back-office, puis connectez-vous à cette app avec le même compte entreprise pour assurer le service',
   'registerBody':
       'L\'inscription d\'une entreprise doit être effectuée dans le navigateur d\'un PC.\nCopiez le lien ci-dessous et ouvrez-le sur un PC.\n\nL\'app mobile sert uniquement à se connecter avec un compte entreprise déjà enregistré.',
   'copyLink': 'Copier le lien',
   'linkCopied': 'Lien copié',
   'copied': 'Copié',
+
+  // Contacts
+  'tabContacts': 'Contacts',
+  'contactsSearchHint': 'Rechercher nom / compte / téléphone / e-mail',
+  'contactsSyncTip': 'Les contacts sont synchronisés automatiquement par l’API ouverte ; seules les infos d’affichage sont gérées ici',
+  'contactsEmpty': 'Aucun contact',
+  'contactsLoadFailed': 'Échec du chargement des contacts',
+  'contactEnabled': 'Activé',
+  'contactDisabled': 'Désactivé',
+  'editContact': 'Modifier le contact',
+  'deleteContact': 'Supprimer',
+  'deleteContactConfirm': 'Supprimer ce contact ? Les conversations existantes ne sont pas affectées.',
+  'save': 'Enregistrer',
+  'contactSaved': 'Enregistré',
+  'contactDeleted': 'Supprimé',
+  'openConversation': 'Ouvrir la conversation',
 };

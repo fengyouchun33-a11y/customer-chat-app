@@ -73,6 +73,10 @@ class AppStrings {
   /// 后台 isolate / 网络层由调用方显式设置。
   static AppStrings current = forCode('zh_CN');
 
+  /// 服务端报错文案按 Accept-Language 选语言，内置语言码要写成 BCP-47（zh_CN → zh-CN）。
+  /// 词表只有中/日/英三份：繁体由服务端别名到简体，其余（韩/西/法/德/葡/俄/阿）回落英文。
+  static String get httpLanguageTag => current.code.replaceAll('_', '-');
+
   static AppStrings forCode(String? code) {
     final normalized = _all.containsKey(code) ? code! : 'zh_CN';
     return AppStrings._(normalized, _all[normalized]!);
@@ -239,6 +243,17 @@ class AppStrings {
   String get unassigned => _t('unassigned');
   String get anonymous => _t('anonymous');
 
+  // 会话转移 / 管理员指定客服
+  String get assign => _t('assign');
+  String get reassign => _t('reassign');
+  String get assignTip => _t('assignTip');
+  String get assignEmpty => _t('assignEmpty');
+  String get assignCurrent => _t('assignCurrent');
+  String get assignOffDuty => _t('assignOffDuty');
+  String agentLoad(String n) => _fmt('agentLoad', [n]);
+  String assignDone(String n) => _fmt('assignDone', [n]);
+  String get confirm => _t('confirm');
+
   // 聊天
   String get senderAgent => _t('senderAgent');
   String get senderAi => _t('senderAi');
@@ -276,6 +291,14 @@ class AppStrings {
   String get closedBarHint => _t('closedBarHint');
   String get replyHint => _t('replyHint');
 
+  // 发送前翻译预览（客服确认/编辑将下发给访客 H5 的译文）
+  String get attachImage => _t('attachImage');
+  String get previewTranslation => _t('previewTranslation');
+  String get visitorWillSee => _t('visitorWillSee');
+  String get retranslate => _t('retranslate');
+  String get translationSameLang => _t('translationSameLang');
+  String get translationStale => _t('translationStale');
+
   // 用户信息（会话中心查看用户档案，仅开放接口创建的会话展示）
   String get userInfo => _t('userInfo');
   String get userName => _t('userName');
@@ -288,6 +311,22 @@ class AppStrings {
   String get userRemark => _t('userRemark');
   String get userInfoLoadFailed => _t('userInfoLoadFailed');
   String get copied => _t('copied');
+
+  // 联系人（工作台 tab，仅租户管理员可见，与 Web 后台 UserList 同口径）
+  String get tabContacts => _t('tabContacts');
+  String get contactsSearchHint => _t('contactsSearchHint');
+  String get contactsSyncTip => _t('contactsSyncTip');
+  String get contactsEmpty => _t('contactsEmpty');
+  String get contactsLoadFailed => _t('contactsLoadFailed');
+  String get contactEnabled => _t('contactEnabled');
+  String get contactDisabled => _t('contactDisabled');
+  String get editContact => _t('editContact');
+  String get deleteContact => _t('deleteContact');
+  String get deleteContactConfirm => _t('deleteContactConfirm');
+  String get save => _t('save');
+  String get contactSaved => _t('contactSaved');
+  String get contactDeleted => _t('contactDeleted');
+  String get openConversation => _t('openConversation');
 
   // 统计
   String get summaryUpdated => _t('summaryUpdated');

@@ -99,6 +99,17 @@ const Map<String, String> esStrings = {
   'allLoaded': 'Se han cargado todas ({0})',
   'agentLabel': 'Agente {0}',
   'unassigned': 'Sin asignar',
+  'assign': 'Asignar agente',
+  'reassign': 'Transferir a otro agente',
+  'assignTip':
+      'Solo se muestran los miembros activos que participan en la asignación y están autorizados para este proyecto (los administradores de inquilino no están limitados). También puede asignar miembros fuera de línea o fuera de horario, pero el visitante esperará a que se conecten.',
+  'assignEmpty':
+      'No hay miembros asignables: en Miembros, autorice este proyecto y active la participación en la asignación',
+  'assignCurrent': 'Actual',
+  'assignOffDuty': 'Fuera de horario',
+  'agentLoad': '{0} activos',
+  'assignDone': 'Asignado a {0}',
+  'confirm': 'Confirmar',
   'anonymous': 'Usuario anónimo',
 
   // Chat
@@ -139,6 +150,12 @@ const Map<String, String> esStrings = {
   'closedBarHint':
       'Conversación cerrada. Al enviar un mensaje se reabrirá automáticamente',
   'replyHint': 'Escribe una respuesta…',
+  'attachImage': 'Imagen',
+  'previewTranslation': 'Vista previa de traducción',
+  'visitorWillSee': 'Lo que recibirá el visitante (editable)',
+  'retranslate': 'Volver a traducir',
+  'translationSameLang': 'Ya está en el idioma del visitante',
+  'translationStale': 'Texto original modificado, traducción desactualizada',
   'userInfo': 'Información del usuario',
   'userName': 'Nombre',
   'userAccount': 'Cuenta',
@@ -234,4 +251,20 @@ const Map<String, String> esStrings = {
   'copyLink': 'Copiar enlace',
   'linkCopied': 'Enlace copiado',
   'copied': 'Copiado',
+
+  // Contactos
+  'tabContacts': 'Contactos',
+  'contactsSearchHint': 'Buscar nombre / cuenta / teléfono / correo',
+  'contactsSyncTip': 'Los contactos se sincronizan automáticamente mediante la API abierta; aquí solo se mantienen los datos de visualización',
+  'contactsEmpty': 'Sin contactos',
+  'contactsLoadFailed': 'No se pudieron cargar los contactos',
+  'contactEnabled': 'Activado',
+  'contactDisabled': 'Desactivado',
+  'editContact': 'Editar contacto',
+  'deleteContact': 'Eliminar',
+  'deleteContactConfirm': '¿Eliminar este contacto? Sus conversaciones anteriores no se ven afectadas.',
+  'save': 'Guardar',
+  'contactSaved': 'Guardado',
+  'contactDeleted': 'Eliminado',
+  'openConversation': 'Abrir conversación',
 };

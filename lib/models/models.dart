@@ -313,6 +313,73 @@ class UserDetail {
       );
 }
 
+/// 联系人（工作台联系人页）：/admin/user/list 返回的 chat_user 行 + 所属项目列
+/// 联系人由开放接口 user_info 同步创建，这里只维护展示资料
+class Contact {
+  final int id;
+  final String externalUserId;
+  final String account;
+  final String name;
+  final String phone;
+  final String email;
+  final String avatar;
+  final String remark;
+  final String projects;
+  final int status;
+  final DateTime? createTime;
+
+  const Contact({
+    required this.id,
+    required this.externalUserId,
+    required this.account,
+    required this.name,
+    required this.phone,
+    required this.email,
+    required this.avatar,
+    required this.remark,
+    required this.projects,
+    required this.status,
+    required this.createTime,
+  });
+
+  /// 展示名与 Web 端列表同口径：姓名 > 账号 > 外部用户ID > 手机号
+  String get displayName {
+    if (name.isNotEmpty) return name;
+    if (account.isNotEmpty) return account;
+    if (externalUserId.isNotEmpty) return externalUserId;
+    if (phone.isNotEmpty) return phone;
+    return '#$id';
+  }
+
+  Contact copyWith({String? account, String? name, String? phone, String? email, String? remark}) => Contact(
+        id: id,
+        externalUserId: externalUserId,
+        account: account ?? this.account,
+        name: name ?? this.name,
+        phone: phone ?? this.phone,
+        email: email ?? this.email,
+        avatar: avatar,
+        remark: remark ?? this.remark,
+        projects: projects,
+        status: status,
+        createTime: createTime,
+      );
+
+  factory Contact.fromJson(Map<String, dynamic> m) => Contact(
+        id: asInt(m['id']),
+        externalUserId: asString(m['external_user_id']),
+        account: asString(m['account']),
+        name: asString(m['name']),
+        phone: asString(m['phone']),
+        email: asString(m['email']),
+        avatar: asString(m['avatar']),
+        remark: asString(m['remark']),
+        projects: asString(m['projects']),
+        status: asInt(m['status'], 1),
+        createTime: parseServerTime(m['create_time']),
+      );
+}
+
 /// 消息。form_data 是开放接口提交的结构化数据，content 为 JSON 数组字符串。
 class ChatMessage {
   final int id;

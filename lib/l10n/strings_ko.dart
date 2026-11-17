@@ -93,6 +93,17 @@ const Map<String, String> koStrings = {
   'allLoaded': '총 {0}건을 모두 불러왔습니다',
   'agentLabel': '상담원 {0}',
   'unassigned': '배정 대기',
+  'assign': '상담원 배정',
+  'reassign': '다른 상담원에게 전달',
+  'assignTip':
+      '활성화·배정 참여·이 프로젝트 권한이 있는 멤버만 표시됩니다(테넌트 관리자는 프로젝트 제한 없음). 오프라인·근무 외 시간도 배정 가능하지만, 상대가 온라인이 될 때까지 방문자는 답을 기다립니다.',
+  'assignEmpty':
+      '배정 가능한 멤버가 없습니다: 멤버 관리에서 이 프로젝트를 권한 부여하고 배정 참여를 활성화하세요',
+  'assignCurrent': '현재 담당',
+  'assignOffDuty': '근무 외',
+  'agentLoad': '대응 {0} 건',
+  'assignDone': '{0}에게 배정되었습니다',
+  'confirm': '확인',
   'anonymous': '익명 사용자',
 
   // 채팅
@@ -131,6 +142,12 @@ const Map<String, String> koStrings = {
   'openLinkFailed': '링크를 열 수 없습니다: {0}',
   'closedBarHint': '상담이 종료되었습니다. 메시지를 보내면 자동으로 다시 열립니다',
   'replyHint': '답장 내용을 입력…',
+  'attachImage': '사진',
+  'previewTranslation': '번역 미리보기',
+  'visitorWillSee': '방문자가 받을 내용(편집 가능)',
+  'retranslate': '다시 번역',
+  'translationSameLang': '이미 방문자 언어입니다',
+  'translationStale': '원문이 변경됨, 번역 업데이트 필요',
   'userInfo': '사용자 정보',
   'userName': '이름',
   'userAccount': '계정',
@@ -219,4 +236,20 @@ const Map<String, String> koStrings = {
   'copyLink': '링크 복사',
   'linkCopied': '링크가 복사되었습니다',
   'copied': '복사되었습니다',
+
+  // 연락처
+  'tabContacts': '연락처',
+  'contactsSearchHint': '이름/계정/전화/이메일 검색',
+  'contactsSyncTip': '연락처는 오픈 API로 자동 동기화되며, 여기서는 표시 정보만 관리합니다',
+  'contactsEmpty': '연락처 없음',
+  'contactsLoadFailed': '연락처 불러오기 실패',
+  'contactEnabled': '사용',
+  'contactDisabled': '중지',
+  'editContact': '연락처 편집',
+  'deleteContact': '삭제',
+  'deleteContactConfirm': '이 연락처를 삭제할까요? 기존 대화에는 영향이 없습니다.',
+  'save': '저장',
+  'contactSaved': '저장되었습니다',
+  'contactDeleted': '삭제되었습니다',
+  'openConversation': '대화 열기',
 };

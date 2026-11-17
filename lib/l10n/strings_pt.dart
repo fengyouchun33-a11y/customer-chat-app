@@ -98,6 +98,17 @@ const Map<String, String> ptStrings = {
   'allLoaded': 'Todas as {0} foram carregadas',
   'agentLabel': 'Atendente {0}',
   'unassigned': 'Não atribuída',
+  'assign': 'Atribuir agente',
+  'reassign': 'Transferir para outro agente',
+  'assignTip':
+      'Apenas membros ativos, que participam da atribuição e autorizados para este projeto são listados (admins de tenant não têm restrição de projeto). Membros offline ou fora do horário também podem ser atribuídos, mas o visitante aguardará até que fiquem online.',
+  'assignEmpty':
+      'Nenhum membro atribuível: em Membros, autorize este projeto e ative a participação na atribuição',
+  'assignCurrent': 'Atual',
+  'assignOffDuty': 'Fora do horário',
+  'agentLoad': '{0} ativos',
+  'assignDone': 'Atribuído a {0}',
+  'confirm': 'Confirmar',
   'anonymous': 'Usuário anônimo',
 
   // Chat
@@ -138,6 +149,12 @@ const Map<String, String> ptStrings = {
   'closedBarHint':
       'Conversa fechada. Enviar uma mensagem a reabrirá automaticamente',
   'replyHint': 'Digite uma resposta…',
+  'attachImage': 'Imagem',
+  'previewTranslation': 'Pré-visualização da tradução',
+  'visitorWillSee': 'O que o visitante receberá (editável)',
+  'retranslate': 'Retraduzir',
+  'translationSameLang': 'Já está no idioma do visitante',
+  'translationStale': 'Texto original alterado, tradução desatualizada',
   'userInfo': 'Informações do usuário',
   'userName': 'Nome',
   'userAccount': 'Conta',
@@ -233,4 +250,20 @@ const Map<String, String> ptStrings = {
   'copyLink': 'Copiar link',
   'linkCopied': 'Link copiado',
   'copied': 'Copiado',
+
+  // Contatos
+  'tabContacts': 'Contatos',
+  'contactsSearchHint': 'Buscar nome / conta / telefone / e-mail',
+  'contactsSyncTip': 'Os contatos são sincronizados automaticamente pela API aberta; aqui você mantém apenas os dados de exibição',
+  'contactsEmpty': 'Nenhum contato',
+  'contactsLoadFailed': 'Falha ao carregar contatos',
+  'contactEnabled': 'Ativo',
+  'contactDisabled': 'Inativo',
+  'editContact': 'Editar contato',
+  'deleteContact': 'Excluir',
+  'deleteContactConfirm': 'Excluir este contato? As conversas antigas não serão afetadas.',
+  'save': 'Salvar',
+  'contactSaved': 'Salvo',
+  'contactDeleted': 'Excluído',
+  'openConversation': 'Abrir conversa',
 };

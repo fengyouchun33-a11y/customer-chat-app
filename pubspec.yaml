@@ -1,11 +1,11 @@
 name: keiyo_chat_app
 description: Keiyo 智能客服管理端 APP（会话中心 + 统计）
 publish_to: 'none'
-version: 1.0.6+7
+version: 1.0.7+8
 
 environment:
-  # flutter_foreground_task 9.x 要求 Dart >= 3.4
-  sdk: '>=3.4.0 <4.0.0'
+  # flutter_foreground_task 11.x 要求 Flutter >= 3.44、Dart >= 3.12（本地与 CI 均为 Flutter 3.47.3）
+  sdk: '>=3.12.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -23,8 +23,12 @@ dependencies:
   fl_chart: ^0.69.2
   # flutter_localizations 依赖 intl ^0.20.3，保持一致
   intl: ^0.20.3
-  flutter_local_notifications: ^17.2.4
-  flutter_foreground_task: ^9.2.2
+  # 20 起 initialize/show/cancel 改具名参数；22.1.0 起提供 Package.swift（SPM）。
+  # 不取 23.x：23 把插件自身 compileSdk 抬到 37 + AGP 9.1.1，而 Flutter 3.47 的
+  # flutter.compileSdkVersion 仍是 36，升级后 app 依赖检查直接构建失败。
+  flutter_local_notifications: ^22.3.3
+  # 11.0.0 起支持 SPM（iOS 侧用 module import，不再需要桥接头文件）
+  flutter_foreground_task: ^11.0.3
   permission_handler: ^11.4.0
   # 表单数据 link 类型：点击用系统浏览器打开
   url_launcher: ^6.3.0

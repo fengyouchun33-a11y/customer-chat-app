@@ -98,6 +98,17 @@ const Map<String, String> deStrings = {
   'allLoaded': 'Alle {0} geladen',
   'agentLabel': 'Agent {0}',
   'unassigned': 'Nicht zugewiesen',
+  'assign': 'Agent zuweisen',
+  'reassign': 'An anderen Agenten übergeben',
+  'assignTip':
+      'Nur aktive, an der Zuteilung beteiligte und für dieses Projekt berechtigte Mitglieder werden angezeigt (Tenant-Administratoren sind nicht projekteingeschränkt). Offline- oder außerhalb der Dienstzeit kann ebenfalls zugewiesen werden, der Besucher wartet jedoch bis der Mitarbeiter online ist.',
+  'assignEmpty':
+      'Keine zuweisbaren Mitglieder: in Mitglieder dieses Projekt berechtigen und Beteiligung an der Zuteilung aktivieren',
+  'assignCurrent': 'Aktuell',
+  'assignOffDuty': 'Außerhalb der Dienstzeit',
+  'agentLoad': '{0} aktiv',
+  'assignDone': '{0} zugewiesen',
+  'confirm': 'Bestätigen',
   'anonymous': 'Anonymer Benutzer',
 
   // Chat
@@ -138,6 +149,12 @@ const Map<String, String> deStrings = {
   'closedBarHint':
       'Gespräch geschlossen. Beim Senden einer Nachricht wird es automatisch wieder geöffnet',
   'replyHint': 'Antwort eingeben…',
+  'attachImage': 'Bild',
+  'previewTranslation': 'Übersetzungsvorschau',
+  'visitorWillSee': 'Was der Besucher erhält (bearbeitbar)',
+  'retranslate': 'Erneut übersetzen',
+  'translationSameLang': 'Bereits in der Besuchersprache',
+  'translationStale': 'Text geändert, Übersetzung veraltet',
   'userInfo': 'Benutzerinformationen',
   'userName': 'Name',
   'userAccount': 'Konto',
@@ -234,4 +251,20 @@ const Map<String, String> deStrings = {
   'copyLink': 'Link kopieren',
   'linkCopied': 'Link kopiert',
   'copied': 'Kopiert',
+
+  // Kontakte
+  'tabContacts': 'Kontakte',
+  'contactsSearchHint': 'Name / Konto / Telefon / E-Mail suchen',
+  'contactsSyncTip': 'Kontakte werden per Open-API automatisch synchronisiert; hier nur Anzeigedaten gepflegt',
+  'contactsEmpty': 'Keine Kontakte',
+  'contactsLoadFailed': 'Kontakte konnten nicht geladen werden',
+  'contactEnabled': 'Aktiv',
+  'contactDisabled': 'Deaktiviert',
+  'editContact': 'Kontakt bearbeiten',
+  'deleteContact': 'Löschen',
+  'deleteContactConfirm': 'Diesen Kontakt löschen? Frühere Gespräche bleiben erhalten.',
+  'save': 'Speichern',
+  'contactSaved': 'Gespeichert',
+  'contactDeleted': 'Gelöscht',
+  'openConversation': 'Chat öffnen',
 };

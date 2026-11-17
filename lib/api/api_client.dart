@@ -53,6 +53,8 @@ class ApiClient {
     if (_token != null && _token!.isNotEmpty) headers['X-Token'] = _token;
     // 平台超管的当前租户：登录/切换后由 AppState 写入，普通成员为 0 时不带
     if (_tenantId > 0) headers['X-Tenant-Id'] = '$_tenantId';
+    // 报错文案由服务端按语言返回（keiyo-chat-server/config/locale/*.js），这里只声明当前界面语言
+    headers['Accept-Language'] = AppStrings.httpLanguageTag;
     return Options(
       headers: headers,
       receiveTimeout: receiveTimeout,

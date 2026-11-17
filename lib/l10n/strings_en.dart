@@ -97,6 +97,17 @@ const Map<String, String> enStrings = {
   'allLoaded': 'All {0} loaded',
   'agentLabel': 'Agent {0}',
   'unassigned': 'Unassigned',
+  'assign': 'Assign an agent',
+  'reassign': 'Transfer to another agent',
+  'assignTip':
+      'Only members who are enabled, set to receive assignments and authorized for this project are listed (tenant admins are not limited by project). Offline or off-duty members can still be assigned, but the visitor waits until they come online.',
+  'assignEmpty':
+      'No assignable members: in Members, grant this agent access to the project and enable receiving assignments',
+  'assignCurrent': 'Current',
+  'assignOffDuty': 'Off-duty',
+  'agentLoad': '{0} active',
+  'assignDone': 'Assigned to {0}',
+  'confirm': 'Confirm',
   'anonymous': 'Anonymous',
 
   // Chat
@@ -137,6 +148,12 @@ const Map<String, String> enStrings = {
   'closedBarHint':
       'Conversation closed. Sending a message will reopen it automatically',
   'replyHint': 'Type a reply…',
+  'attachImage': 'Photo',
+  'previewTranslation': 'Translation preview',
+  'visitorWillSee': 'What the visitor will receive (editable)',
+  'retranslate': 'Re-translate',
+  'translationSameLang': 'Already in the visitor language',
+  'translationStale': 'Original changed, translation out of date',
   'userInfo': 'User Info',
   'userName': 'Name',
   'userAccount': 'Account',
@@ -228,4 +245,20 @@ const Map<String, String> enStrings = {
   'copyLink': 'Copy link',
   'linkCopied': 'Link copied',
   'copied': 'Copied',
+
+  // Contacts
+  'tabContacts': 'Contacts',
+  'contactsSearchHint': 'Search name / account / phone / email',
+  'contactsSyncTip': 'Contacts are synced automatically by the open API; this page only maintains display details',
+  'contactsEmpty': 'No contacts',
+  'contactsLoadFailed': 'Failed to load contacts',
+  'contactEnabled': 'Enabled',
+  'contactDisabled': 'Disabled',
+  'editContact': 'Edit contact',
+  'deleteContact': 'Delete',
+  'deleteContactConfirm': 'Delete this contact? Their past conversations are not affected.',
+  'save': 'Save',
+  'contactSaved': 'Saved',
+  'contactDeleted': 'Deleted',
+  'openConversation': 'Open conversation',
 };

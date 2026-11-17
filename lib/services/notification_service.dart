@@ -67,7 +67,7 @@ class NotificationService {
 
   Future<void> _doInitialize(bool handlesTap) async {
     await _plugin.initialize(
-      _settings,
+      settings: _settings,
       onDidReceiveNotificationResponse: handlesTap ? _handleResponse : null,
     );
     if (handlesTap) {
@@ -183,17 +183,17 @@ class NotificationService {
       badgeNumber: badge > 0 ? badge : null,
     );
     await _plugin.show(
-      id,
-      title,
-      body,
-      NotificationDetails(android: android, iOS: ios),
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(android: android, iOS: ios),
       payload: jsonEncode(data),
     );
   }
 
   Future<void> cancel(int id) async {
     try {
-      await _plugin.cancel(id);
+      await _plugin.cancel(id: id);
     } catch (_) {}
   }
 

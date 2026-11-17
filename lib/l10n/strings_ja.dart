@@ -93,6 +93,17 @@ const Map<String, String> jaStrings = {
   'allLoaded': '全 {0} 件を読み込みました',
   'agentLabel': '担当 {0}',
   'unassigned': '未割り当て',
+  'assign': '担当客服を指定',
+  'reassign': '他の客服に引き継ぐ',
+  'assignTip':
+      '有効・割り当て参加・本プロジェクト認可済みのメンバーのみ表示（テナント管理者はプロジェクト制限なし）。オフラインや時間帯外も指定できますが、相手はオンラインになるまで返信しません。',
+  'assignEmpty':
+      '割り当て可能なメンバーがいません：メンバー管理で本プロジェクトを認可し、割り当て参加を有効にしてください',
+  'assignCurrent': '現在の担当',
+  'assignOffDuty': '時間帯外',
+  'agentLoad': '対応 {0} 件',
+  'assignDone': '{0} に割り当てました',
+  'confirm': '決定',
   'anonymous': '匿名ユーザー',
 
   // チャット
@@ -131,6 +142,12 @@ const Map<String, String> jaStrings = {
   'openLinkFailed': 'リンクを開けません：{0}',
   'closedBarHint': '会話は終了済みです。メッセージを送信すると自動的に再開されます',
   'replyHint': '返信内容を入力…',
+  'attachImage': '画像',
+  'previewTranslation': '翻訳プレビュー',
+  'visitorWillSee': '訪問者が受け取る内容（編集可）',
+  'retranslate': '再翻訳',
+  'translationSameLang': 'すでに訪問者の言語です',
+  'translationStale': '原文が変更されました、翻訳は更新が必要',
   'userInfo': 'ユーザー情報',
   'userName': '名前',
   'userAccount': 'アカウント',
@@ -218,4 +235,20 @@ const Map<String, String> jaStrings = {
   'copyLink': 'リンクをコピー',
   'linkCopied': 'リンクをコピーしました',
   'copied': 'コピーしました',
+
+  // 連絡先
+  'tabContacts': '連絡先',
+  'contactsSearchHint': '名前/アカウント/電話/メールを検索',
+  'contactsSyncTip': '連絡先はオープンAPIで自動同期され、ここでは表示用の情報のみ管理します',
+  'contactsEmpty': '連絡先がありません',
+  'contactsLoadFailed': '連絡先の読み込みに失敗',
+  'contactEnabled': '有効',
+  'contactDisabled': '無効',
+  'editContact': '連絡先を編集',
+  'deleteContact': '削除',
+  'deleteContactConfirm': 'この連絡先を削除しますか？過去の会話には影響しません。',
+  'save': '保存',
+  'contactSaved': '保存しました',
+  'contactDeleted': '削除しました',
+  'openConversation': '会話を開く',
 };

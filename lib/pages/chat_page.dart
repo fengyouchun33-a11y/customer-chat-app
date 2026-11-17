@@ -54,6 +54,16 @@ class _ChatPageState extends State<ChatPage> {
   final List<XFile> _pendingImages = [];
   StreamSubscription<Map<String, dynamic>>? _msgSub;
 
+  // 发送前翻译预览：译文可编辑，确认后随回复一起下发（服务端不再重复翻译）
+  final TextEditingController _transCtrl = TextEditingController();
+  bool _transOpen = false; // 译文面板是否展开
+  bool _transLoading = false; // 正在请求译文
+  bool _transSame = false; // 原文已是访客语言，无需翻译
+  bool _transStale = false; // 预览后原文又被改动，译文待更新
+  String _transLang = ''; // 目标语言码（服务端按会话访客语言返回）
+  int _transSeq = 0; // 防并发覆盖：只认最后一次预览的结果
+  bool _attachOpen = false; // 微信式「+」扩展面板（图片上传 / 翻译预览）
+
   List<ChatMessage> _messages = const [];
   bool _loading = true;
   bool _sending = false;
@@ -116,6 +126,7 @@ class _ChatPageState extends State<ChatPage> {
     _app.realtime.joinConversation(_conv.convKey);
     _msgSub = _app.realtime.newMessages.listen(_onRealtimeMsg);
     _scrollCtrl.addListener(_onScroll);
+    _replyCtrl.addListener(_onReplyChanged);
     _loadMessages(initial: true);
     _poll = Timer.periodic(AppConfig.chatPollInterval, (_) => _pollTick());
   }
@@ -127,7 +138,9 @@ class _ChatPageState extends State<ChatPage> {
     _app.realtime.leaveConversation(_conv.convKey);
     _msgSub?.cancel();
     _scrollCtrl.removeListener(_onScroll);
+    _replyCtrl.removeListener(_onReplyChanged);
     _replyCtrl.dispose();
+    _transCtrl.dispose();
     _replyFocus.dispose();
     _scrollCtrl.dispose();
     super.dispose();
@@ -355,6 +368,79 @@ class _ChatPageState extends State<ChatPage> {
     _loadMessages(silent: true, follow: true);
   }
 
+  /// 原文（客服输入框）变化后：已加载的译文随之过期，提示重新翻译，避免把旧译文发出去
+  void _onReplyChanged() {
+    if (!_transOpen || _transLoading || _transStale) return;
+    setState(() => _transStale = true);
+  }
+
+  /// 微信式「+」扩展面板开合：展开时收起键盘，避免与面板争空间
+  void _toggleAttachPanel() {
+    setState(() => _attachOpen = !_attachOpen);
+    if (_attachOpen) _replyFocus.unfocus();
+  }
+
+  void _toggleTranslationPanel() {
+    if (_transOpen) {
+      _closeTranslation();
+    } else {
+      setState(() {
+        _transOpen = true;
+        _transStale = false;
+      });
+      _runTranslationPreview();
+    }
+  }
+
+  void _closeTranslation() {
+    _transSeq++; // 作废在途的预览请求
+    _transCtrl.clear();
+    if (!mounted) return;
+    setState(() {
+      _transOpen = false;
+      _transLoading = false;
+      _transSame = false;
+      _transStale = false;
+      _transLang = '';
+    });
+  }
+
+  /// 拉取当前原文按访客语言的译文，填入可编辑区。失败只提示，不阻断发送。
+  Future<void> _runTranslationPreview() async {
+    final text = _replyCtrl.text.trim();
+    if (text.isEmpty) {
+      setState(() {
+        _transLoading = false;
+        _transStale = false;
+      });
+      return;
+    }
+    final api = context.read<AppState>().api;
+    final seq = ++_transSeq;
+    setState(() => _transLoading = true);
+    try {
+      final data = await api.post('/admin/conversation/translatePreview', data: {
+        'conv_key': _conv.convKey,
+        'content': text,
+      });
+      if (!mounted || seq != _transSeq) return;
+      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      setState(() {
+        _transCtrl.text = asString(m['translated_content']);
+        _transCtrl.selection =
+            TextSelection.collapsed(offset: _transCtrl.text.length);
+        _transLang = asString(m['translated_lang']);
+        _transSame = m['same'] == true;
+        _transStale = false;
+        _transLoading = false;
+      });
+    } catch (e) {
+      if (!mounted || seq != _transSeq) return;
+      setState(() => _transLoading = false);
+      showSnack(context, e.toString(), error: true);
+    }
+  }
+
   Future<void> _send() async {
     final text = _replyCtrl.text.trim();
     if (_sending) return;
@@ -364,13 +450,21 @@ class _ChatPageState extends State<ChatPage> {
     try {
       // 先上传图片拿地址，再和文字一起发：服务端拼成同一条消息
       final urls = await _uploadPendingImages(api);
+      // 面板展开且译文已确认（非过期）：把客服编辑过的译文一起下发，服务端不再重复翻译
+      final translatedText = _transCtrl.text.trim();
+      final useManualTranslation =
+          _transOpen && text.isNotEmpty && translatedText.isNotEmpty && !_transStale;
       final data = <String, dynamic>{
         'conv_key': _conv.convKey,
         if (text.isNotEmpty) 'content': text,
         if (urls.isNotEmpty) 'images': urls,
+        if (useManualTranslation) 'translated_content': translatedText,
+        if (useManualTranslation && _transLang.isNotEmpty) 'translated_lang': _transLang,
       };
       await api.post('/admin/conversation/reply', data: data);
       _replyCtrl.clear();
+      _closeTranslation();
+      if (mounted) setState(() => _attachOpen = false);
       if (_pendingImages.isNotEmpty) setState(() => _pendingImages.clear());
       await _loadMessages(silent: true, follow: true);
       _replyFocus.requestFocus();
@@ -574,6 +668,258 @@ class _ChatPageState extends State<ChatPage> {
     } finally {
       if (mounted) setState(() => _actionBusy = false);
     }
+  }
+
+  /// 会话转移 / 指定客服：拉取可分配成员，弹层选择后调用 assign。
+  /// status==0：替访客转人工并指定负责人；status==1：转交给另一位；status==2 不提供入口。
+  Future<void> _openAssignSheet() async {
+    if (_actionBusy) return;
+    final s = AppStrings.current;
+    final api = context.read<AppState>().api;
+    setState(() => _actionBusy = true);
+    List<Map<String, dynamic>> candidates;
+    try {
+      final data = await api.get(
+        '/admin/conversation/assign-candidates',
+        query: {'conv_key': _conv.convKey},
+      );
+      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      candidates = ((m['list'] as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (e) {
+      if (mounted) showSnack(context, e.toString(), error: true);
+      if (mounted) setState(() => _actionBusy = false);
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _actionBusy = false);
+    final isReassign = _conv.status == 1;
+    int pick = _defaultAssignPick(candidates);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetCtx) {
+        bool submitting = false;
+        return StatefulBuilder(
+          builder: (context, setSheet) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.borderStrong,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      isReassign ? s.reassign : s.assign,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.text),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(s.assignTip,
+                        style: const TextStyle(
+                            fontSize: 11.5, color: AppColors.textDim, height: 1.4)),
+                    const SizedBox(height: 8),
+                    if (candidates.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Text(s.assignEmpty,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 12.5, color: AppColors.textMute)),
+                      )
+                    else
+                      Flexible(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              for (final a in candidates)
+                                _assignRow(
+                                  a: a,
+                                  selected: pick == asInt(a['id']),
+                                  onTap: a['current'] == true
+                                      ? null
+                                      : () => setSheet(() => pick = asInt(a['id'])),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: submitting ? null : () => Navigator.pop(sheetCtx),
+                            child: Text(s.cancel),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: (submitting || pick == 0)
+                                ? null
+                                : () async {
+                                    setSheet(() => submitting = true);
+                                    try {
+                                      final data = await api.post(
+                                        '/admin/conversation/assign',
+                                        data: {
+                                          'conv_key': _conv.convKey,
+                                          'agent_id': pick,
+                                        },
+                                      );
+                                      final d = data is Map
+                                          ? Map<String, dynamic>.from(data)
+                                          : const <String, dynamic>{};
+                                      final name = asString(d['agent_name']);
+                                      if (mounted) {
+                                        setState(() => _conv = _conv.copyWith(
+                                              agentId: asInt(d['agent_id']),
+                                              agentName: name,
+                                              status: d.containsKey('status')
+                                                  ? asInt(d['status'])
+                                                  : null));
+                                      }
+                                      if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                                      if (mounted) showSnack(context, s.assignDone(name));
+                                      await _loadMessages(silent: true, follow: true);
+                                    } catch (e) {
+                                      if (sheetCtx.mounted) {
+                                        setSheet(() => submitting = false);
+                                        showSnack(sheetCtx, e.toString(), error: true);
+                                      }
+                                    }
+                                  },
+                            child: submitting
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2))
+                                : Text(s.confirm),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 默认选在线且接待量最少的一位（与服务端自动分配同优先级），没人在线退到离线负载最少
+  int _defaultAssignPick(List<Map<String, dynamic>> list) {
+    int best = 0, bestLoad = 1 << 30, bestId = 1 << 30;
+    int fb = 0, fbLoad = 1 << 30, fbId = 1 << 30;
+    for (final a in list) {
+      if (a['current'] == true) continue;
+      final id = asInt(a['id']);
+      final load = asInt(a['load']);
+      if (load < fbLoad || (load == fbLoad && id < fbId)) {
+        fbLoad = load;
+        fbId = id;
+        fb = id;
+      }
+      if (a['online'] == true && (load < bestLoad || (load == bestLoad && id < bestId))) {
+        bestLoad = load;
+        bestId = id;
+        best = id;
+      }
+    }
+    return best != 0 ? best : fb;
+  }
+
+  Widget _assignRow({
+    required Map<String, dynamic> a,
+    required bool selected,
+    VoidCallback? onTap,
+  }) {
+    final s = AppStrings.current;
+    final online = a['online'] == true;
+    final onDuty = a['on_duty'] == true;
+    final current = a['current'] == true;
+    final load = asInt(a['load']);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.accent.withOpacity(0.12) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? AppColors.accent.withOpacity(0.4) : AppColors.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: online ? AppColors.ok : AppColors.textMute,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  asString(a['name']),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: current ? AppColors.textMute : AppColors.text),
+                ),
+              ),
+              if (current)
+                _assignBadge(s.assignCurrent, AppColors.accent)
+              else if (!onDuty)
+                _assignBadge(s.assignOffDuty, AppColors.textMute),
+              const SizedBox(width: 8),
+              Text(online ? s.online : s.offline,
+                  style: const TextStyle(fontSize: 11, color: AppColors.textDim)),
+              const SizedBox(width: 8),
+              Text(s.agentLoad('$load'),
+                  style: const TextStyle(fontSize: 11, color: AppColors.textMute)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _assignBadge(String text, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(text,
+            style: TextStyle(fontSize: 9.5, color: color, height: 1.2)),
+      ),
+    );
   }
 
   void _retry() {
@@ -813,6 +1159,8 @@ class _ChatPageState extends State<ChatPage> {
                 _toggleStatus();
               } else if (v == 'ai') {
                 _toggleAi();
+              } else if (v == 'assign') {
+                _openAssignSheet();
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
@@ -840,6 +1188,18 @@ class _ChatPageState extends State<ChatPage> {
                   ],
                 ),
               ),
+              if (_conv.status != 2)
+                PopupMenuItem<String>(
+                  value: 'assign',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.swap_horiz_outlined,
+                          size: 17, color: AppColors.textDim),
+                      const SizedBox(width: 10),
+                      Text(_conv.status == 1 ? s.reassign : s.assign),
+                    ],
+                  ),
+                ),
               PopupMenuItem<String>(
                 value: 'ai',
                 child: Row(
@@ -1346,7 +1706,8 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _pickImageButton() {
+  /// 「+」按钮：微信式，点开 / 收起扩展面板
+  Widget _attachButton() {
     return SizedBox(
       width: 44,
       height: 44,
@@ -1358,13 +1719,185 @@ class _ChatPageState extends State<ChatPage> {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: _sending ? null : _pickImages,
+          onTap: _sending ? null : _toggleAttachPanel,
           child: Icon(
-            Icons.image_outlined,
-            size: 20,
-            color: _sending ? AppColors.textMute : AppColors.accent,
+            _attachOpen ? Icons.close_rounded : Icons.add_rounded,
+            size: 22,
+            color: _sending ? AppColors.textMute : AppColors.textDim,
           ),
         ),
+      ),
+    );
+  }
+
+  /// 微信式扩展面板：图片上传、翻译预览都收在「+」里
+  Widget _attachPanel() {
+    final s = AppStrings.current;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: _replyCtrl,
+        builder: (context, value, _) {
+          final hasText = value.text.trim().isNotEmpty;
+          return Row(
+            children: [
+              _attachTile(
+                icon: Icons.image_outlined,
+                label: s.attachImage,
+                enabled: !_sending,
+                onTap: () {
+                  setState(() => _attachOpen = false);
+                  _pickImages();
+                },
+              ),
+              const SizedBox(width: 18),
+              _attachTile(
+                icon: Icons.translate,
+                label: s.previewTranslation,
+                enabled: !_sending && (_transOpen || hasText),
+                onTap: () {
+                  setState(() => _attachOpen = false);
+                  if (!_transOpen) _toggleTranslationPanel();
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _attachTile({
+    required IconData icon,
+    required String label,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    final color = enabled ? AppColors.textDim : AppColors.textMute;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: enabled ? onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppColors.panel2,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Icon(icon, size: 22, color: color),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              label,
+              style: TextStyle(fontSize: 10.5, color: color),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 译文预览/编辑面板：展示将下发给访客(H5)的译文，可编辑；确认后随回复发送且不再重译
+  Widget _translationPreviewPanel() {
+    final s = AppStrings.current;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+      decoration: BoxDecoration(
+        color: AppColors.panel2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.translate, size: 13, color: AppColors.accent),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  s.visitorWillSee,
+                  style: const TextStyle(fontSize: 11, color: AppColors.textDim),
+                ),
+              ),
+              if (_transLang.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _transLang,
+                    style: const TextStyle(
+                        fontSize: 9.5, color: AppColors.accent, height: 1.2),
+                  ),
+                ),
+              ],
+              if (_transLoading)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+                tooltip: s.retranslate,
+                onPressed: _transLoading ? null : _runTranslationPreview,
+                icon: const Icon(Icons.refresh, size: 16, color: AppColors.textDim),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+                tooltip: s.close,
+                onPressed: _closeTranslation,
+                icon: const Icon(Icons.close, size: 16, color: AppColors.textMute),
+              ),
+            ],
+          ),
+          if (_transSame && !_transLoading)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                s.translationSameLang,
+                style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
+              ),
+            )
+          else if (_transStale)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                s.translationStale,
+                style: const TextStyle(fontSize: 10.5, color: AppColors.signal),
+              ),
+            ),
+          TextField(
+            controller: _transCtrl,
+            minLines: 1,
+            maxLines: 5,
+            style: const TextStyle(fontSize: 13, color: AppColors.text),
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1404,11 +1937,12 @@ class _ChatPageState extends State<ChatPage> {
                   ],
                 ),
               ),
+            if (_transOpen) _translationPreviewPanel(),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _pickImageButton(),
-                const SizedBox(width: 6),
+                _attachButton(),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _replyCtrl,
@@ -1457,6 +1991,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ],
             ),
+            if (_attachOpen) _attachPanel(),
           ],
         ),
       ),

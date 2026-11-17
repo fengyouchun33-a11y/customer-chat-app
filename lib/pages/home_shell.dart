@@ -15,10 +15,12 @@ import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'chat_page.dart';
 import 'conversations_page.dart';
+import 'contacts_page.dart';
 import 'stats_page.dart';
 import 'tenant_select_page.dart';
 
-/// 工作台外壳：底部两个 Tab（会话 / 统计），顶栏放租户、自动翻译与退出。
+/// 工作台外壳：底部 Tab（会话 / 联系人 / 统计），顶栏放租户、自动翻译与退出。
+/// 联系人需要租户管理员权限（/admin/user/list 带 requireAdmin），普通客服不展示该 tab。
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -241,6 +243,8 @@ class _HomeShellState extends State<HomeShell> {
     final tenantName = state.tenant?.companyName ?? s.noTenantSelected;
     final autoTranslate = state.admin?.autoTranslate ?? false;
     final soundOn = state.soundEnabled;
+    // 联系人 tab 仅管理员可见；角色可能随 profile 刷新变化，索引需钳制到当前页签数
+    final showContacts = state.admin?.isAdmin == true;
 
     return Scaffold(
       appBar: AppBar(
@@ -327,11 +331,15 @@ class _HomeShellState extends State<HomeShell> {
         ],
       ),
       body: IndexedStack(
-        index: _tab,
-        children: const [ConversationsPage(), StatsPage()],
+        index: _clampTab(_tab, showContacts),
+        children: [
+          const ConversationsPage(),
+          if (showContacts) const ContactsPage(),
+          const StatsPage(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _tab,
+        currentIndex: _clampTab(_tab, showContacts),
         onTap: (i) => setState(() => _tab = i),
         items: [
           BottomNavigationBarItem(
@@ -347,6 +355,12 @@ class _HomeShellState extends State<HomeShell> {
             ),
             label: s.tabConversations,
           ),
+          if (showContacts)
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.people_outline),
+              activeIcon: const Icon(Icons.people),
+              label: s.tabContacts,
+            ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.insights_outlined),
             activeIcon: const Icon(Icons.insights),
@@ -355,5 +369,11 @@ class _HomeShellState extends State<HomeShell> {
         ],
       ),
     );
+  }
+
+  /// 联系人 tab 隐藏时（如切到普通客服账号），统计页索引从 2 变 1，防止越界
+  int _clampTab(int tab, bool showContacts) {
+    final max = showContacts ? 2 : 1;
+    return tab > max ? max : (tab < 0 ? 0 : tab);
   }
 }
