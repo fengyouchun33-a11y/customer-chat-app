@@ -469,6 +469,7 @@ class _ContactsPageState extends State<ContactsPage> {
     );
   }
 
+  /// 列表项不再展示启用/停用状态（contactEnabled/Disabled 仅详情面板用）
   Widget _statusPill(bool enabled) {
     final color = enabled ? AppColors.ok : AppColors.textMute;
     return Container(
@@ -742,6 +743,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         Expanded(
                           child: Text(
                             c.displayName,
+                            textAlign: TextAlign.end,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -779,8 +781,6 @@ class _ContactsPageState extends State<ContactsPage> {
                               style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
                             ),
                           ),
-                        const SizedBox(width: 6),
-                        _statusPill(c.status == 1),
                       ],
                     ),
                   ],
