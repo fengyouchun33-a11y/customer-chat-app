@@ -1,7 +1,7 @@
 name: keiyo_chat_app
 description: Keiyo 智能客服管理端 APP（会话中心 + 统计）
 publish_to: 'none'
-version: 1.0.9+10
+version: 1.0.10+11
 
 environment:
   # flutter_foreground_task 11.x 要求 Flutter >= 3.44、Dart >= 3.12（本地与 CI 均为 Flutter 3.47.3）
