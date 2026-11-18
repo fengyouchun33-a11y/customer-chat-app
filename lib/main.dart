@@ -8,7 +8,6 @@ import 'api/api_client.dart';
 import 'app.dart';
 import 'config/app_config.dart';
 import 'l10n/app_strings.dart';
-import 'services/background_watch_service.dart';
 import 'services/notification_service.dart';
 import 'services/push_service.dart';
 import 'state/app_state.dart';
@@ -22,8 +21,6 @@ Future<void> main() async {
     AppStrings.effectiveCode(prefs.getString('keiyo_chat_lang')),
   );
 
-  // 初始化前台服务与本地通知通道（必须在 runApp 之前）
-  BackgroundWatchService.init();
   // FCM 后台入口必须在 runApp 之前注册；没配 Firebase 也不会报错
   PushService.registerBackgroundHandler();
   try {

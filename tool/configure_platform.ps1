@@ -32,9 +32,6 @@ $manifest = [System.IO.File]::ReadAllText($manifestPath)
 $permissions = @(
     'android.permission.INTERNET',
     'android.permission.POST_NOTIFICATIONS',
-    'android.permission.FOREGROUND_SERVICE',
-    'android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING',
-    'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
     'android.permission.WAKE_LOCK'
 )
 

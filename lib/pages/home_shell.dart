@@ -45,8 +45,6 @@ class _HomeShellState extends State<HomeShell> {
       _state = state;
       state.addListener(_onStateChanged);
       state.setAppForeground(true);
-      // 冷启动时兜底再启动一次常驻服务（系统限制/首帧时序都可能导致首次启动失败）
-      unawaited(BackgroundWatchService.start());
       _maybeOpenPending();
       _maybePromptKeepAlive();
     });
@@ -137,19 +135,10 @@ class _HomeShellState extends State<HomeShell> {
 
   Future<void> _enableBackground() async {
     final granted = await NotificationService.instance.requestPermissions();
-    var battery = false;
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      battery = await BackgroundWatchService.requestBatteryOptimization();
-    }
-    await BackgroundWatchService.start();
     if (!mounted) return;
 
     final s = AppStrings.current;
-    final parts = <String>[granted ? s.notifOn : s.notifOff];
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      parts.add(battery ? s.bgOn : s.bgOff);
-    }
-    showSnack(context, parts.join(s.listSeparator));
+    showSnack(context, granted ? s.notifOn : s.notifOff);
 
     if (!granted) {
       final open = await showDialog<bool>(

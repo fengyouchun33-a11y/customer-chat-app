@@ -8,7 +8,6 @@ import '../api/api_client.dart';
 import '../config/app_config.dart';
 import '../l10n/app_strings.dart';
 import '../models/models.dart';
-import '../services/background_watch_service.dart';
 import '../services/notification_service.dart';
 import '../services/push_service.dart';
 import '../services/realtime_service.dart';
@@ -25,8 +24,7 @@ class AppState extends ChangeNotifier {
     PushService.instance.onOpenConversation = openConversationFromMap;
     // FCM token 轮换后重新登记，否则会推到旧设备令牌上
     PushService.instance.onTokenChanged = _syncPush;
-    // 保活 isolate 不能用 SharedPreferences，基线只能回传这里落盘
-    BackgroundWatchService.addTaskDataCallback(_onWatchTaskData);
+    // 保活 isolate 已移除，不再需要数据回调
   }
 
   final ApiClient api;
@@ -52,12 +50,8 @@ class AppState extends ChangeNotifier {
   String? _openConvKey;
   Map<String, dynamic>? _pendingConversation;
 
-  /// 前台心跳：保活 isolate 只能靠推过来的证据判断 APP 是否在前台，
-  /// 所以证据必须持续刷新，而不是只在生命周期回调那一下发一次
-  Timer? _watchBeat;
-
-  /// 服务刚起来时把本地基线交给保活 isolate 几次，之后它自己会回写，不再搬
-  int _watchSeedBeats = 0;
+  /// 前台状态（已简化，仅用于 realtime presence 上报）
+  bool get isInForeground => _appInForeground;
 
   bool get restoring => _restoring;
 
@@ -109,9 +103,6 @@ class AppState extends ChangeNotifier {
 
     _restoring = false;
     if (admin != null && tenant != null) {
-      _watchSeedBeats = 5;
-      unawaited(BackgroundWatchService.start());
-      _pushWatchUiState();
       _connectRealtime();
       _syncPush();
     }
@@ -137,12 +128,8 @@ class AppState extends ChangeNotifier {
     api.setAuth(token: _token, tenantId: tenant?.id ?? 0);
     await _persistAuth();
 
-    // 平台超管先不启动后台轮询，选完租户后再启用
+    // 平台超管先不启动后台推送登记，选完租户后再启用
     if (tenant != null) {
-      await BackgroundWatchService.clearSnapshot();
-      _watchSeedBeats = 5;
-      await BackgroundWatchService.start();
-      _pushWatchUiState();
       _connectRealtime();
       _syncPush();
     }
@@ -186,13 +173,9 @@ class AppState extends ChangeNotifier {
     api.setAuth(token: _token, tenantId: picked.id);
     await _persistAuth();
 
-    // 换租户后旧租户的通知与未读基线都失效
+    // 换租户后旧租户的通知都失效
     _openConvKey = null;
-    await BackgroundWatchService.clearSnapshot();
     unawaited(NotificationService.instance.cancelAll());
-    _watchSeedBeats = 5;
-    await BackgroundWatchService.start();
-    _pushWatchUiState();
     // 会话房间与管理员房间都按租户识别，换租户必须重建连接
     _connectRealtime();
     _syncPush();
@@ -227,10 +210,6 @@ class AppState extends ChangeNotifier {
     _langPref = pref;
     AppStrings.current = AppStrings.forCode(AppStrings.effectiveCode(pref));
     await _prefs?.setString('keiyo_chat_lang', pref);
-    // 立刻把新语言推给保活 isolate，后台通知不会停在旧语言上
-    _pushWatchUiState();
-    // 常驻通知是系统里已经发出去的那一条，只能主动刷新文案
-    unawaited(BackgroundWatchService.refreshNotification());
     notifyListeners();
   }
 
@@ -272,79 +251,25 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// APP 前后台变化：后台保活任务据此决定是否弹通知
   void setAppForeground(bool foreground) {
     _appInForeground = foreground;
     if (foreground) {
       // 长时间挂起后 socket 可能已被系统断开，回前台补一次连接与推送登记
       _connectRealtime();
       _syncPush();
-    } else {
-      // 退后台立即停掉心跳：这一条 foreground:false 有可能被 ROM 截在半路，
-      // 但只要心跳不再新鲜，isolate 超过窗口就会回到后台口径开始弹通知
-      _watchBeat?.cancel();
-      _watchBeat = null;
     }
-    _pushWatchUiState();
-    // 前后台切换是服务端“要不要发系统推送”的唯一凭据，不能等下一轮心跳：
-    // 退后台那一下报迟了，中间来的消息就既没推送也没人看见
+    // 前后台切换是服务端“要不要发系统推送”的唯一凭据
     realtime.reportPresence();
-    // 后台不弹的唯一开关就在这一行上；日志里没进来说明生命周期回调没递到
-    debugPrint('[watch] setAppForeground=$foreground beat=${_watchBeat?.isActive == true}');
   }
 
   /// 当前正在看的会话，同会话新消息不再弹通知
   void setOpenConversation(String? convKey) {
     _openConvKey = convKey;
-    _pushWatchUiState();
   }
 
   void clearOpenConversation(String convKey) {
     if (_openConvKey != convKey) return;
     _openConvKey = null;
-    _pushWatchUiState();
-  }
-
-  void _pushWatchUiState() {
-    if (admin == null || tenant == null) return;
-    _pushWatchContext();
-    if (!_appInForeground) return;
-    if (_watchBeat?.isActive == true) return;
-    _watchBeat = Timer.periodic(const Duration(seconds: 2), (_) => _pushWatchContext());
-  }
-
-  /// 把登录态与偏好交给保活 isolate：它在自己的 isolate 里读不到
-  /// SharedPreferences（JNI 实例只注册在主 isolate），不推过来就只能拿到空 token。
-  void _pushWatchContext() {
-    final t = tenant;
-    if (t == null) return;
-    String? seed;
-    if (_watchSeedBeats > 0) {
-      _watchSeedBeats--;
-      final raw = _prefs?.getString(BackgroundWatchService.snapshotKey);
-      seed = (raw == null || raw.isEmpty) ? '{}' : raw;
-    }
-    BackgroundWatchService.pushContext(
-      foreground: _appInForeground,
-      token: _token,
-      tenantId: t.id,
-      soundEnabled: SoundService.instance.enabled,
-      pushRegistered: _prefs?.getBool(PushService.registeredKey) ?? false,
-      lang: AppStrings.current.code,
-      openConvKey: _openConvKey,
-      baselineSeed: seed,
-    );
-  }
-
-  void _onWatchTaskData(Map<Object?, Object?> data) {
-    if (data['type'] != 'baseline') return;
-    final json = data['json'];
-    final prefs = _prefs;
-    if (json is! String || prefs == null) return;
-    unawaited(() async {
-      await prefs.setString(BackgroundWatchService.snapshotKey, json);
-      await prefs.setBool(BackgroundWatchService.readyKey, true);
-    }());
   }
 
   /// 通知点击（本地通知 payload 或 FCM data），等根路由具备进入条件后由工作台消费
@@ -473,9 +398,6 @@ class AppState extends ChangeNotifier {
       } catch (_) {}
     }
     realtime.disconnect();
-    _watchBeat?.cancel();
-    _watchBeat = null;
-    _watchSeedBeats = 0;
     _token = '';
     admin = null;
     tenant = null;
@@ -484,9 +406,7 @@ class AppState extends ChangeNotifier {
     _pendingConversation = null;
     api.setAuth(token: null);
 
-    // 退出/令牌失效时同步停掉常驻服务，避免无身份轮询与残留通知
-    await BackgroundWatchService.stop();
-    await BackgroundWatchService.clearSnapshot();
+    // 退出/令牌失效时取消所有残留通知
     unawaited(NotificationService.instance.cancelAll());
 
     _prefs ??= await SharedPreferences.getInstance();
