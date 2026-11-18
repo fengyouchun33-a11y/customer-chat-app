@@ -130,7 +130,10 @@ jobs:
       - name: build ipa
         run: |
           set -euo pipefail
-          pod repo update --silent || true
+          # 插件已改为 Swift Package Manager 交付(见 project.pbxproj 里的
+          # FlutterGeneratedPluginSwiftPackage), 不再依赖 CocoaPods。
+          # ios/Podfile 已删除, 这里不再执行任何 pod 命令, 否则会触发
+          # "sandbox is not in sync with the Podfile.lock" 的半集成状态。
           flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
 
       - uses: actions/upload-artifact@v4
