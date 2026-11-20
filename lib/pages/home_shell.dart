@@ -9,19 +9,18 @@ import '../l10n/app_strings.dart';
 import '../models/models.dart';
 import '../services/background_watch_service.dart';
 import '../services/notification_service.dart';
-import '../services/sound_service.dart';
 import '../state/app_state.dart';
-import '../support/support_chat_page.dart';
 import '../support/support_sdk.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'chat_page.dart';
 import 'conversations_page.dart';
 import 'contacts_page.dart';
+import 'more_page.dart';
 import 'stats_page.dart';
 import 'tenant_select_page.dart';
 
-/// 工作台外壳：底部 Tab（会话 / 联系人 / 统计），顶栏放租户、自动翻译与退出。
+/// 工作台外壳：底部 Tab（会话 / 联系人 / 统计 / 更多），顶栏放租户切换与退出。
 /// 联系人需要租户管理员权限（/admin/user/list 带 requireAdmin），普通客服不展示该 tab。
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -164,36 +163,12 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
-  Future<void> _toggleSound() async {
-    final state = context.read<AppState>();
-    final next = !state.soundEnabled;
-    await state.setSoundEnabled(next);
-    if (!mounted) return;
-    final s = AppStrings.current;
-    showSnack(context, next ? s.soundOnToast : s.soundOffToast);
-    // 开启时试听一次，方便确认音量与音效
-    if (next) unawaited(SoundService.instance.playNewMessage());
-  }
-
   Future<void> _openTenantPicker() async {
     await Navigator.of(
       context,
     ).push<bool>(MaterialPageRoute(builder: (_) => const TenantSelectPage()));
     if (!mounted) return;
     setState(() {});
-  }
-
-  Future<void> _toggleTranslate() async {
-    final state = context.read<AppState>();
-    final next = !(state.admin?.autoTranslate ?? false);
-    try {
-      await state.setAutoTranslate(next);
-      final s = AppStrings.current;
-      if (mounted)
-        showSnack(context, next ? s.translateOnToast : s.translateOffToast);
-    } catch (e) {
-      if (mounted) showSnack(context, e.toString(), error: true);
-    }
   }
 
   Future<void> _logout() async {
@@ -225,47 +200,6 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
-  /// Contact support: the SDK resolves the fixed chat URL, then we open the
-  /// WebView page (SDK itself lives in lib/support/)
-  Future<void> _openSupport() async {
-    final s = AppStrings.current;
-    final state = context.read<AppState>();
-    final admin = state.admin;
-    if (admin == null) return;
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 14),
-            Expanded(child: Text(s.supportLoading)),
-          ],
-        ),
-      ),
-    );
-    String? url;
-    try {
-      url = await SupportSdk.instance.resolveChatUrl(admin);
-    } catch (_) {
-      // failures all surface through the url == null branch below
-    }
-    if (!mounted) return;
-    Navigator.of(context).pop(); // dismiss the loading dialog
-    if (url == null) {
-      showSnack(context, s.supportUnavailable, error: true);
-      return;
-    }
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(builder: (_) => SupportChatPage(url: url!)),
-    );
-  }
-
   PopupMenuItem<String> _menuItem(String value, IconData icon, String label) {
     return PopupMenuItem<String>(
       value: value,
@@ -285,8 +219,6 @@ class _HomeShellState extends State<HomeShell> {
     final s = AppStrings.of(context);
     final unread = state.unreadTotal;
     final tenantName = state.tenant?.companyName ?? s.noTenantSelected;
-    final autoTranslate = state.admin?.autoTranslate ?? false;
-    final soundOn = state.soundEnabled;
     // 联系人 tab 仅管理员可见；角色可能随 profile 刷新变化，索引需钳制到当前页签数
     final showContacts = state.admin?.isAdmin == true;
 
@@ -343,20 +275,8 @@ class _HomeShellState extends State<HomeShell> {
             icon: const Icon(Icons.more_vert, color: AppColors.textDim),
             onSelected: (v) {
               switch (v) {
-                case 'translate':
-                  _toggleTranslate();
-                  break;
-                case 'sound':
-                  _toggleSound();
-                  break;
                 case 'tenant':
                   _openTenantPicker();
-                  break;
-                case 'language':
-                  showLanguagePicker(context);
-                  break;
-                case 'support':
-                  _openSupport();
                   break;
                 case 'logout':
                   _logout();
@@ -364,29 +284,10 @@ class _HomeShellState extends State<HomeShell> {
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
-              _menuItem(
-                'translate',
-                autoTranslate ? Icons.translate : Icons.translate_outlined,
-                autoTranslate ? s.autoTranslateOn : s.autoTranslateOff,
-              ),
-              _menuItem(
-                'sound',
-                soundOn ? Icons.volume_up : Icons.volume_off,
-                soundOn ? s.soundMenuOn : s.soundMenuOff,
-              ),
-              _menuItem(
-                'language',
-                Icons.language,
-                s.languageMenu(
-                  AppStrings.nativeName(
-                    AppStrings.effectiveCode(state.languagePref),
-                  ),
-                ),
-              ),
-              if (state.isPlatform)
+              if (state.isPlatform) ...[
                 _menuItem('tenant', Icons.swap_horiz, s.switchTenant),
-              const PopupMenuDivider(),
-              _menuItem('support', Icons.headset_mic_outlined, s.supportEntry),
+                const PopupMenuDivider(),
+              ],
               _menuItem('logout', Icons.logout, s.logout),
             ],
           ),
@@ -398,6 +299,7 @@ class _HomeShellState extends State<HomeShell> {
           const ConversationsPage(),
           if (showContacts) const ContactsPage(),
           const StatsPage(),
+          const MorePage(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -428,14 +330,20 @@ class _HomeShellState extends State<HomeShell> {
             activeIcon: const Icon(Icons.insights),
             label: s.tabStats,
           ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.more_horiz),
+            label: s.tabMore,
+          ),
         ],
       ),
     );
   }
 
-  /// 联系人 tab 隐藏时（如切到普通客服账号），统计页索引从 2 变 1，防止越界
+  /// Tab index clamp. MorePage is always the last tab, so the max index is 3
+  /// for admins (conv/contacts/stats/more) and 2 for plain agents
+  /// (conv/stats/more) when the contacts tab is hidden.
   int _clampTab(int tab, bool showContacts) {
-    final max = showContacts ? 2 : 1;
+    final max = showContacts ? 3 : 2;
     return tab > max ? max : (tab < 0 ? 0 : tab);
   }
 }

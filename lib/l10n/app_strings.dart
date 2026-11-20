@@ -202,6 +202,19 @@ class AppStrings {
   String get supportTitle => _t('supportTitle');
   String get supportLoading => _t('supportLoading');
   String get supportUnavailable => _t('supportUnavailable');
+
+  // "More" tab (account header + support / legal / about entries)
+  String get tabMore => _t('tabMore');
+  String get moreSectionHelp => _t('moreSectionHelp');
+  String get moreSectionLegal => _t('moreSectionLegal');
+  String get moreSectionAbout => _t('moreSectionAbout');
+  String get moreSectionPrefs => _t('moreSectionPrefs');
+  String get prefAutoTranslate => _t('prefAutoTranslate');
+  String get prefSound => _t('prefSound');
+  String get privacyPolicy => _t('privacyPolicy');
+  String get userAgreement => _t('userAgreement');
+  String get officialWebsite => _t('officialWebsite');
+  String get appVersion => _t('appVersion');
   String get notifOn => _t('notifOn');
   String get notifOff => _t('notifOff');
   String get bgOn => _t('bgOn');
