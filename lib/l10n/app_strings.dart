@@ -330,6 +330,14 @@ class AppStrings {
   String get reviewInviteSendTitle => _t('reviewInviteSendTitle');
   // 确认弹窗里的发送按钮(聊天页发送钮是纯图标, 词表无现成"发送")
   String get reviewInviteSendBtn => _t('reviewInviteSendBtn');
+  // 「+」面板里的发送文档：选完直发 [标题](url) 给访客，与邀请评价直发同款交互
+  String get sendDoc => _t('sendDoc');
+  String get docPickTitle => _t('docPickTitle');
+  String get docSearchHint => _t('docSearchHint');
+  String get docEmpty => _t('docEmpty');
+  String docSendConfirm(String title) => _fmt('docSendConfirm', [title]);
+  String docSendTitle(String title) => _fmt('docSendTitle', [title]);
+  String get docSendHint => _t('docSendHint');
   String get visitorWillSee => _t('visitorWillSee');
   String get retranslate => _t('retranslate');
   String get translationSameLang => _t('translationSameLang');

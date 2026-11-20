@@ -300,7 +300,7 @@ class _ChatPageState extends State<ChatPage> {
     if (ok == true) await _sendReviewCard(card);
   }
 
-  /// 评价卡片单独成条直发：不碰输入框草稿，也不参与翻译面板
+  /// 评价卡片/文档链接等 Markdown 内容单独成条直发：不碰输入框草稿，也不参与翻译面板
   Future<void> _sendReviewCard(String card) async {
     if (_sending) return;
     final api = context.read<AppState>().api;
@@ -336,6 +336,210 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ),
     );
+  }
+
+  /// 发送文档：底部弹窗列出「全局+当前会话项目」的文档库，可搜索、滚动分页；
+  /// 点选二次确认后关弹窗直发 [标题](url)，与 Web 管理端会话页同口径(访客端渲染成链接走下载链)
+  void _openDocSheet() {
+    setState(() => _attachOpen = false);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetCtx) {
+        final s = AppStrings.current;
+        // 弹窗局部状态：打开即拉第一页，搜索重查，触底续拉
+        final docs = <Map<String, dynamic>>[];
+        var keyword = '';
+        var total = 0;
+        var page = 0;
+        var loading = false;
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.7,
+          minChildSize: 0.4,
+          maxChildSize: 0.92,
+          builder: (bodyCtx, scrollCtrl) => StatefulBuilder(
+            builder: (context, setSheet) {
+              Future<void> load(int p, {bool append = false}) async {
+                if (loading) return;
+                setSheet(() => loading = true);
+                try {
+                  final data = await _app.api.get('/admin/doc/list', query: {
+                    'page': '$p',
+                    'pageSize': '20',
+                    if (keyword.isNotEmpty) 'keyword': keyword,
+                    if (_conv.projectId > 0) 'project_id': '${_conv.projectId}',
+                  });
+                  final rows = <Map<String, dynamic>>[
+                    if (data is Map && data['list'] is List)
+                      for (final e in data['list'] as List)
+                        if (e is Map) Map<String, dynamic>.from(e),
+                  ];
+                  setSheet(() {
+                    if (append) {
+                      docs.addAll(rows);
+                    } else {
+                      docs
+                        ..clear()
+                        ..addAll(rows);
+                    }
+                    total = data is Map ? asInt(data['total'], 0) : 0;
+                    page = p;
+                    loading = false;
+                  });
+                } catch (e) {
+                  setSheet(() => loading = false);
+                  if (mounted) {
+                    showSnack(this.context,
+                        e is ApiException ? e.message : e.toString(),
+                        error: true);
+                  }
+                }
+              }
+
+              Future<void> pick(Map<String, dynamic> d) async {
+                final title = asString(d['title']);
+                final url = asString(d['url']);
+                if (title.isEmpty || url.isEmpty) return;
+                final ok = await showDialog<bool>(
+                  context: this.context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(s.sendDoc),
+                    content: Text(s.docSendConfirm(title)),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(s.cancel),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(s.reviewInviteSendBtn),
+                      ),
+                    ],
+                  ),
+                );
+                if (ok != true) return;
+                if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                // 卡片式模板(与邀请评价卡同款 blockquote): 客服语言文案落进正文,
+                // 链接文本保持纯文件名(访客端下载落盘名取链接文本)
+                // 复用直发通道: _sending 互斥 + silent 刷新, 不入输入框草稿
+                await _sendReviewCard(
+                  '> 📄 **${s.docSendTitle(title)}**\n> \n'
+                  '> [$title]($url)\n> \n'
+                  '> ${s.docSendHint}',
+                );
+              }
+
+              return Column(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.borderStrong,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      s.docPickTitle,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                    child: TextField(
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (v) {
+                        keyword = v.trim();
+                        load(1);
+                      },
+                      decoration: InputDecoration(
+                        hintText: s.docSearchHint,
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        isDense: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: docs.isEmpty
+                        ? (loading
+                            ? const Center(
+                                child: CircularProgressIndicator())
+                            : EmptyState(
+                                icon: Icons.description_outlined,
+                                text: s.docEmpty,
+                              ))
+                        : NotificationListener<ScrollNotification>(
+                            onNotification: (n) {
+                              final m = n.metrics;
+                              if (m.axis == Axis.vertical &&
+                                  m.pixels >= m.maxScrollExtent - 60 &&
+                                  !loading &&
+                                  docs.length < total) {
+                                load(page + 1, append: true);
+                              }
+                              return false;
+                            },
+                            child: ListView.separated(
+                              controller: scrollCtrl,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 6),
+                              itemCount: docs.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1, indent: 56),
+                              itemBuilder: (context, i) {
+                                final d = docs[i];
+                                final ext = asString(d['file_ext'])
+                                    .replaceFirst('.', '')
+                                    .toUpperCase();
+                                return ListTile(
+                                  dense: true,
+                                  leading:
+                                      const Icon(Icons.description_outlined),
+                                  title: Text(
+                                    asString(d['title']),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text(
+                                    '$ext · ${_fmtDocSize(asInt(d['file_size'], 0))}',
+                                  ),
+                                  trailing:
+                                      const Icon(Icons.send_outlined, size: 20),
+                                  onTap: () => pick(d),
+                                );
+                              },
+                            ),
+                          ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // 文件大小展示与 Web 管理端文档库同口径: B / KB / MB 三档
+  String _fmtDocSize(int v) {
+    if (v >= 1024 * 1024) return '${(v / 1024 / 1024).toStringAsFixed(1)} MB';
+    if (v >= 1024) return '${(v / 1024).round()} KB';
+    return '$v B';
   }
 
   Future<void> _loadMessages({
@@ -2288,6 +2492,14 @@ class _ChatPageState extends State<ChatPage> {
                   onTap: _insertReviewCard,
                 ),
               ],
+              // 发送文档：不分项目类型常驻展示，可选范围由服务端按授权项目+全局收敛
+              const SizedBox(width: 18),
+              _attachTile(
+                icon: Icons.description_outlined,
+                label: s.sendDoc,
+                enabled: !_sending,
+                onTap: _openDocSheet,
+              ),
             ],
           );
         },
