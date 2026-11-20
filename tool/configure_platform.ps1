@@ -58,17 +58,8 @@ if ($manifest -notmatch 'android:usesCleartextTraffic') {
     $changed.Add('Android usesCleartextTraffic=true')
 }
 
-if ($manifest -notmatch 'com\.pravera\.flutter_foreground_task\.service\.ForegroundService') {
-    $serviceBlock = @'
-        <service
-            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
-            android:foregroundServiceType="remoteMessaging"
-            android:exported="false" />
-'@
-    $replacement = $serviceBlock + "`r`n" + '$1</application>'
-    $manifest = [regex]::Replace($manifest, '(?m)^(\s*)</application>', $replacement, 1)
-    $changed.Add('Android foreground service (remoteMessaging)')
-}
+# flutter_foreground_task was dropped in v1.0.11 (background delivery is FCM/APNs
+# only); do not re-add a ForegroundService declaration — the class no longer exists.
 
 # FCM 下发时服务端指定了 channel_id，默认渠道必须与本地通知一致
 if ($manifest -notmatch 'default_notification_channel_id') {
@@ -257,12 +248,8 @@ if ($plist -match '(?s)<key>UIBackgroundModes</key>\s*<array>(.*?)</array>') {
     }
 }
 
-$plist = Add-PlistBlock $plist '<key>BGTaskSchedulerPermittedIdentifiers</key>' @'
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.pravera.flutter_foreground_task.refresh</string>
-	</array>
-'@ 'iOS BGTaskSchedulerPermittedIdentifiers'
+# BGTaskSchedulerPermittedIdentifiers for flutter_foreground_task removed together
+# with the plugin (v1.0.11); the block must NOT be re-added on fresh templates.
 
 $plist = Add-PlistBlock $plist '<key>NSAppTransportSecurity</key>' @'
 	<key>NSAppTransportSecurity</key>
@@ -310,40 +297,10 @@ if (Test-Path $appDelegatePath) {
     $appDelegate = [System.IO.File]::ReadAllText($appDelegatePath)
     $original = $appDelegate
 
-    if ($appDelegate -notmatch 'import flutter_foreground_task') {
-        if ($appDelegate -match '(?m)^import Flutter\r?$') {
-            $appDelegate = [regex]::Replace(
-                $appDelegate,
-                '(?m)^import Flutter\r?$',
-                "import Flutter`r`nimport flutter_foreground_task`r`nimport UserNotifications",
-                1
-            )
-        }
-    }
-
-    if ($appDelegate -notmatch 'SwiftFlutterForegroundTaskPlugin') {
-        # 插在 GeneratedPluginRegistrant.register 之后，缩进跟模板保持一致
-        $registerPattern = '(?m)^([ \t]*)GeneratedPluginRegistrant\.register\(with: self\)[ \t]*\r?\n'
-        $registerMatch = [regex]::Match($appDelegate, $registerPattern)
-        if ($registerMatch.Success) {
-            $indent = $registerMatch.Groups[1].Value
-            $inject = @"
-${indent}SwiftFlutterForegroundTaskPlugin.setPluginRegistrantCallback { registry in
-${indent}  GeneratedPluginRegistrant.register(with: registry)
-${indent}}
-${indent}if #available(iOS 10.0, *) {
-${indent}  UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
-${indent}}
-
-"@
-            $appDelegate = [regex]::Replace(
-                $appDelegate,
-                $registerPattern,
-                { param($m) $m.Value + $inject },
-                1
-            )
-        }
-    }
+    # NOTE: no flutter_foreground_task import / setPluginRegistrantCallback injection
+    # here anymore — the plugin was removed in v1.0.11 and importing it breaks the
+    # Swift compile ("Unable to find module dependency"). Plugin registration happens
+    # via GeneratedPluginRegistrant (template default) or didInitializeImplicitFlutterEngine.
 
     # Firebase iOS 需要在启动时读取 GoogleService-Info.plist；没放配置就不注入，避免启动崩溃
     $googleServicesPlist = Join-Path $ProjectRoot 'ios/Runner/GoogleService-Info.plist'

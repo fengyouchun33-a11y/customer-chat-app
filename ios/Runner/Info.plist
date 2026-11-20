@@ -73,10 +73,6 @@
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>客服回复消息时需要从相册选择图片</string>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.pravera.flutter_foreground_task.refresh</string>
-	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

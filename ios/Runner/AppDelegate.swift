@@ -1,5 +1,4 @@
 import Flutter
-import flutter_foreground_task
 import UserNotifications
 import UIKit
 
@@ -16,13 +15,8 @@ private let kTapDefaultsKey = "keiyo.apns.pendingTap"
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // flutter_foreground_task 在 iOS 上会另起一个后台 FlutterEngine 跑保活 isolate，
-    // 它的 initialize() 第一道门槛就是这个回调：拿不到就直接 return（只 print 一行），
-    // 保活 isolate 根本不会启动。新模板把插件注册挪到了 didInitializeImplicitFlutterEngine，
-    // configure_platform.ps1 原来那条 register(with: self) 的注入 pattern 已经匹配不上了，所以这里显式补上。
-    SwiftFlutterForegroundTaskPlugin.setPluginRegistrantCallback { registry in
-      GeneratedPluginRegistrant.register(with: registry)
-    }
+    // flutter_foreground_task 已随 v1.0.11 移除（后台只走 FCM/APNs），这里不再需要
+    // 它的 setPluginRegistrantCallback；插件注册统一走下方 didInitializeImplicitFlutterEngine。
     // 必须显式把自己设成 center delegate：系统只在它上面回调远程推送的点击与前台展示。
     // 原来没人设置，所以 iOS 上通知点了没反应、前台本地通知也不显示。
     UNUserNotificationCenter.current().delegate = self
