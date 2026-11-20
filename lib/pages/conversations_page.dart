@@ -70,12 +70,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
   }
 
   Map<String, dynamic> _query(int page) => {
-        'page': page,
-        'pageSize': AppConfig.pageSize,
-        'keyword': _keyword,
-        if (_projectId > 0) 'project_id': _projectId,
-        if (_status >= 0) 'status': _status,
-      };
+    'page': page,
+    'pageSize': AppConfig.pageSize,
+    'keyword': _keyword,
+    if (_projectId > 0) 'project_id': _projectId,
+    if (_status >= 0) 'status': _status,
+  };
 
   List<Conversation> _parseList(dynamic raw) {
     if (raw is! List) return const [];
@@ -93,9 +93,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
       setState(() {
         _projects = data is List
             ? data
-                .whereType<Map>()
-                .map((e) => Project.fromJson(Map<String, dynamic>.from(e)))
-                .toList()
+                  .whereType<Map>()
+                  .map((e) => Project.fromJson(Map<String, dynamic>.from(e)))
+                  .toList()
             : const [];
       });
     } catch (_) {
@@ -107,8 +107,13 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Future<void> _refresh({bool silent = false, bool replaceList = true}) async {
     final state = context.read<AppState>();
     try {
-      final data = await state.api.get('/admin/conversation/list', query: _query(1));
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final data = await state.api.get(
+        '/admin/conversation/list',
+        query: _query(1),
+      );
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       final list = _parseList(m['list']);
       final total = asInt(m['total']);
       if (!mounted) return;
@@ -189,8 +194,13 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final state = context.read<AppState>();
     setState(() => _loadingMore = true);
     try {
-      final data = await state.api.get('/admin/conversation/list', query: _query(next));
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final data = await state.api.get(
+        '/admin/conversation/list',
+        query: _query(next),
+      );
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       final list = _parseList(m['list']);
       if (!mounted) return;
       final exists = _items.map((e) => e.id).toSet();
@@ -283,9 +293,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
   }
 
   Future<void> _openChat(Conversation c) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(builder: (_) => ChatPage(conversation: c)),
-    );
+    await Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute(builder: (_) => ChatPage(conversation: c)));
     if (!mounted) return;
     // 聊天页读消息会清零未读，回复也可能改变状态/负责人
     await _refresh(silent: true, replaceList: _page == 1);
@@ -350,7 +360,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
             Text(
               busy
                   ? AppStrings.current.switching
-                  : (online ? AppStrings.current.online : AppStrings.current.offline),
+                  : (online
+                        ? AppStrings.current.online
+                        : AppStrings.current.offline),
               style: TextStyle(
                 fontSize: 11,
                 height: 1.2,
@@ -377,19 +389,26 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 children: [
                   Text(
                     s.conversationQueue,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     s.totalCount('$_total'),
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMute),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMute,
+                    ),
                   ),
                   const Spacer(),
                   // 上线/下线只对客服有意义：管理员与平台超管不参与新会话分配
                   Consumer<AppState>(
                     builder: (context, state, _) {
                       final user = state.admin;
-                      if (user == null || user.isAdmin) return const SizedBox.shrink();
+                      if (user == null || user.isAdmin)
+                        return const SizedBox.shrink();
                       return Padding(
                         padding: const EdgeInsets.only(right: 4),
                         child: _onlinePill(user.onlineStatus),
@@ -404,7 +423,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
                         minimumSize: const Size(40, 28),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: Text(s.resetFilters, style: const TextStyle(fontSize: 11)),
+                      child: Text(
+                        s.resetFilters,
+                        style: const TextStyle(fontSize: 11),
+                      ),
                     ),
                 ],
               ),
@@ -417,7 +439,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 decoration: InputDecoration(
                   hintText: s.searchConversationHint,
                   isDense: true,
-                  prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMute),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 18,
+                    color: AppColors.textMute,
+                  ),
                   suffixIcon: _searchCtrl.text.isEmpty
                       ? null
                       : IconButton(
@@ -426,7 +452,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
                             _searchCtrl.clear();
                             _submitSearch('');
                           },
-                          icon: const Icon(Icons.close, size: 16, color: AppColors.textMute),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: AppColors.textMute,
+                          ),
                         ),
                 ),
               ),
@@ -489,7 +519,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
       onSelected: _setProject,
       itemBuilder: (context) => <PopupMenuEntry<int>>[
         PopupMenuItem<int>(value: 0, child: Text(s.allProjects)),
-        ..._projects.map((p) => PopupMenuItem<int>(value: p.id, child: Text(p.name))),
+        ..._projects.map(
+          (p) => PopupMenuItem<int>(value: p.id, child: Text(p.name)),
+        ),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -497,7 +529,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
           color: active ? AppColors.accent.withOpacity(0.14) : AppColors.panel2,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? AppColors.accent.withOpacity(0.55) : AppColors.border,
+            color: active
+                ? AppColors.accent.withOpacity(0.55)
+                : AppColors.border,
           ),
         ),
         child: Row(
@@ -632,7 +666,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
             color: AppColors.panel,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: unread ? AppColors.accent.withOpacity(0.38) : AppColors.border,
+              color: unread
+                  ? AppColors.accent.withOpacity(0.38)
+                  : AppColors.border,
             ),
           ),
           child: Row(
@@ -653,15 +689,22 @@ class _ConversationsPageState extends State<ConversationsPage> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13.5,
-                              fontWeight: unread ? FontWeight.w700 : FontWeight.w600,
-                              color: closed ? AppColors.textDim : AppColors.text,
+                              fontWeight: unread
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: closed
+                                  ? AppColors.textDim
+                                  : AppColors.text,
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           fmtTimeShort(c.lastMsgTime ?? c.createTime),
-                          style: const TextStyle(fontSize: 10, color: AppColors.textMute),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMute,
+                          ),
                         ),
                       ],
                     ),
@@ -673,7 +716,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
                             '${c.userLabel} · ${c.projectName.isEmpty ? '-' : c.projectName}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 11.5, color: AppColors.textDim),
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.textDim,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -682,7 +728,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
                           const SizedBox(width: 6),
                           Container(
                             constraints: const BoxConstraints(minWidth: 18),
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: AppColors.danger,
@@ -708,14 +757,18 @@ class _ConversationsPageState extends State<ConversationsPage> {
                           Icon(
                             Icons.headset_mic_outlined,
                             size: 11,
-                            color: c.status == 1 ? AppColors.signal : AppColors.textMute,
+                            color: c.status == 1
+                                ? AppColors.signal
+                                : AppColors.textMute,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             owner,
                             style: TextStyle(
                               fontSize: 10.5,
-                              color: c.status == 1 ? AppColors.signal : AppColors.textMute,
+                              color: c.status == 1
+                                  ? AppColors.signal
+                                  : AppColors.textMute,
                             ),
                           ),
                         ],

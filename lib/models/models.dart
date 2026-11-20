@@ -21,7 +21,8 @@ String asString(dynamic v, [String fallback = '']) {
   return v.toString();
 }
 
-String asTrimString(dynamic v, [String fallback = '']) => asString(v, fallback).trim();
+String asTrimString(dynamic v, [String fallback = '']) =>
+    asString(v, fallback).trim();
 
 /// 登录后的管理员身份。登录接口和 /admin/profile 字段略有差异，统一收在这里。
 class AdminUser {
@@ -33,6 +34,7 @@ class AdminUser {
   final String role;
   final String prefLang;
   final bool autoTranslate;
+
   /// 接单状态(会话页的上线/下线)：下线只是不再接受新会话分配
   final bool onlineStatus;
   final bool isPlatform;
@@ -131,24 +133,25 @@ class AdminUser {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'account': account,
-        'name': name,
-        'nickname': nickname,
-        'avatar': avatar,
-        'role': role,
-        'pref_lang': prefLang,
-        'auto_translate': autoTranslate ? 1 : 0,
-        'online_status': onlineStatus ? 1 : 0,
-        'is_platform': isPlatform ? 1 : 0,
-        'is_owner': isOwner ? 1 : 0,
-        'tenant_id': tenantId,
-        'company_name': companyName,
-        'current_tenant_id': currentTenantId,
-        'current_tenant_name': currentTenantName,
-      };
+    'id': id,
+    'account': account,
+    'name': name,
+    'nickname': nickname,
+    'avatar': avatar,
+    'role': role,
+    'pref_lang': prefLang,
+    'auto_translate': autoTranslate ? 1 : 0,
+    'online_status': onlineStatus ? 1 : 0,
+    'is_platform': isPlatform ? 1 : 0,
+    'is_owner': isOwner ? 1 : 0,
+    'tenant_id': tenantId,
+    'company_name': companyName,
+    'current_tenant_id': currentTenantId,
+    'current_tenant_name': currentTenantName,
+  };
 
-  factory AdminUser.fromJson(Map<String, dynamic> m) => AdminUser.fromProfile(m);
+  factory AdminUser.fromJson(Map<String, dynamic> m) =>
+      AdminUser.fromProfile(m);
 }
 
 class Tenant {
@@ -157,10 +160,8 @@ class Tenant {
 
   const Tenant({required this.id, required this.companyName});
 
-  factory Tenant.fromJson(Map<String, dynamic> m) => Tenant(
-        id: asInt(m['id']),
-        companyName: asString(m['company_name']),
-      );
+  factory Tenant.fromJson(Map<String, dynamic> m) =>
+      Tenant(id: asInt(m['id']), companyName: asString(m['company_name']));
 
   Map<String, dynamic> toJson() => {'id': id, 'company_name': companyName};
 }
@@ -169,12 +170,24 @@ class Project {
   final int id;
   final String name;
 
-  const Project({required this.id, required this.name});
+  /// APP 项目在市场配置的销售地址（后台选填）：
+  /// 沟通页「+」面板的邀请评价按钮按平台跳转对应市场，空则不展示入口
+  final String googlePlayUrl;
+  final String appStoreUrl;
+
+  const Project({
+    required this.id,
+    required this.name,
+    this.googlePlayUrl = '',
+    this.appStoreUrl = '',
+  });
 
   factory Project.fromJson(Map<String, dynamic> m) => Project(
-        id: asInt(m['id']),
-        name: asString(m['name']),
-      );
+    id: asInt(m['id']),
+    name: asString(m['name']),
+    googlePlayUrl: asString(m['google_play_url']),
+    appStoreUrl: asString(m['app_store_url']),
+  );
 }
 
 /// 会话列表项，字段与 controller/conversation.js 的 list 保持一致
@@ -183,11 +196,13 @@ class Conversation {
   final int projectId;
   final String convKey;
   final String visitorId;
+
   /// 绑定同步用户 id(开放接口创建, 0=匿名访客); 仅 user_id>0 时能查用户档案
   final int userId;
   final String userName;
   final String title;
   final int status;
+
   /// 客服手动暂停AI回答(0=否 1=是); 与转人工状态独立, 不依赖访客转人工
   final int aiPaused;
   final int agentId;
@@ -196,6 +211,7 @@ class Conversation {
   final DateTime? lastMsgTime;
   final DateTime? createTime;
   final String projectName;
+
   /// 最新一条消息的预览（服务端已压成单行：图片→[图片]、表单数据→[表单数据]）
   /// 列表接口字段是 last_msg，socket 会话摘要字段是 preview
   final String lastMsg;
@@ -233,7 +249,13 @@ class Conversation {
     return AppStrings.current.anonymous;
   }
 
-  Conversation copyWith({int? status, int? aiPaused, int? agentId, String? agentName, int? adminUnread}) {
+  Conversation copyWith({
+    int? status,
+    int? aiPaused,
+    int? agentId,
+    String? agentName,
+    int? adminUnread,
+  }) {
     return Conversation(
       id: id,
       projectId: projectId,
@@ -255,25 +277,25 @@ class Conversation {
   }
 
   factory Conversation.fromJson(Map<String, dynamic> m) => Conversation(
-        id: asInt(m['id']),
-        projectId: asInt(m['project_id']),
-        convKey: asString(m['conv_key']),
-        visitorId: asString(m['visitor_id']),
-        userId: asInt(m['user_id']),
-        userName: asString(m['user_name']),
-        title: asString(m['title']),
-        status: asInt(m['status']),
-        aiPaused: asInt(m['ai_paused']),
-        agentId: asInt(m['agent_id']),
-        agentName: asString(m['agent_name']),
-        adminUnread: asInt(m['admin_unread']),
-        lastMsgTime: parseServerTime(m['last_msg_time']),
-        createTime: parseServerTime(m['create_time']),
-        projectName: asString(m['project_name']),
-        lastMsg: asString(m['last_msg']).isNotEmpty
-            ? asString(m['last_msg'])
-            : asString(m['preview']),
-      );
+    id: asInt(m['id']),
+    projectId: asInt(m['project_id']),
+    convKey: asString(m['conv_key']),
+    visitorId: asString(m['visitor_id']),
+    userId: asInt(m['user_id']),
+    userName: asString(m['user_name']),
+    title: asString(m['title']),
+    status: asInt(m['status']),
+    aiPaused: asInt(m['ai_paused']),
+    agentId: asInt(m['agent_id']),
+    agentName: asString(m['agent_name']),
+    adminUnread: asInt(m['admin_unread']),
+    lastMsgTime: parseServerTime(m['last_msg_time']),
+    createTime: parseServerTime(m['create_time']),
+    projectName: asString(m['project_name']),
+    lastMsg: asString(m['last_msg']).isNotEmpty
+        ? asString(m['last_msg'])
+        : asString(m['preview']),
+  );
 }
 
 /// 用户档案（会话中心"查看用户信息"）：/admin/user/detail 返回的 chat_user 行
@@ -286,6 +308,9 @@ class UserDetail {
   final String avatar;
   final String externalUserId;
   final String remark;
+
+  /// 访问平台码(android/ios/harmony/...), 服务端按 H5 的 User-Agent 识别, 空=未识别
+  final String platform;
   final DateTime? createTime;
 
   const UserDetail({
@@ -298,19 +323,37 @@ class UserDetail {
     required this.externalUserId,
     required this.remark,
     required this.createTime,
+    this.platform = '',
   });
 
   factory UserDetail.fromJson(Map<String, dynamic> m) => UserDetail(
-        id: asInt(m['id']),
-        account: asString(m['account']),
-        name: asString(m['name']),
-        phone: asString(m['phone']),
-        email: asString(m['email']),
-        avatar: asString(m['avatar']),
-        externalUserId: asString(m['external_user_id']),
-        remark: asString(m['remark']),
-        createTime: parseServerTime(m['create_time']),
-      );
+    id: asInt(m['id']),
+    account: asString(m['account']),
+    name: asString(m['name']),
+    phone: asString(m['phone']),
+    email: asString(m['email']),
+    avatar: asString(m['avatar']),
+    externalUserId: asString(m['external_user_id']),
+    remark: asString(m['remark']),
+    platform: asString(m['platform']),
+    createTime: parseServerTime(m['create_time']),
+  );
+}
+
+/// 访客标签(租户级共享): /admin/tag/list 定义 + 关联在用户上。
+/// color 为服务端存的色值字符串(可为空), 为空时客户端按 id 从预设色板取色。
+class Tag {
+  final int id;
+  final String name;
+  final String color;
+
+  const Tag({required this.id, required this.name, required this.color});
+
+  factory Tag.fromJson(Map<String, dynamic> m) => Tag(
+    id: asInt(m['id']),
+    name: asString(m['name']),
+    color: asString(m['color']),
+  );
 }
 
 /// 联系人（工作台联系人页）：/admin/user/list 返回的 chat_user 行 + 所属项目列
@@ -325,8 +368,14 @@ class Contact {
   final String avatar;
   final String remark;
   final String projects;
+
+  /// 访问平台码: 服务端按访客打开 H5 时的 User-Agent 识别, 只读展示
+  final String platform;
   final int status;
   final DateTime? createTime;
+
+  /// 该访客已勾选的标签(服务端 /admin/user/list 附带)
+  final List<Tag> tags;
 
   const Contact({
     required this.id,
@@ -340,6 +389,8 @@ class Contact {
     required this.projects,
     required this.status,
     required this.createTime,
+    this.platform = '',
+    this.tags = const [],
   });
 
   /// 展示名与 Web 端列表同口径：姓名 > 账号 > 外部用户ID > 手机号
@@ -351,33 +402,49 @@ class Contact {
     return '#$id';
   }
 
-  Contact copyWith({String? account, String? name, String? phone, String? email, String? remark}) => Contact(
-        id: id,
-        externalUserId: externalUserId,
-        account: account ?? this.account,
-        name: name ?? this.name,
-        phone: phone ?? this.phone,
-        email: email ?? this.email,
-        avatar: avatar,
-        remark: remark ?? this.remark,
-        projects: projects,
-        status: status,
-        createTime: createTime,
-      );
+  Contact copyWith({
+    String? account,
+    String? name,
+    String? phone,
+    String? email,
+    String? remark,
+    List<Tag>? tags,
+  }) => Contact(
+    id: id,
+    externalUserId: externalUserId,
+    account: account ?? this.account,
+    name: name ?? this.name,
+    phone: phone ?? this.phone,
+    email: email ?? this.email,
+    avatar: avatar,
+    remark: remark ?? this.remark,
+    projects: projects,
+    platform: platform,
+    status: status,
+    createTime: createTime,
+    tags: tags ?? this.tags,
+  );
 
   factory Contact.fromJson(Map<String, dynamic> m) => Contact(
-        id: asInt(m['id']),
-        externalUserId: asString(m['external_user_id']),
-        account: asString(m['account']),
-        name: asString(m['name']),
-        phone: asString(m['phone']),
-        email: asString(m['email']),
-        avatar: asString(m['avatar']),
-        remark: asString(m['remark']),
-        projects: asString(m['projects']),
-        status: asInt(m['status'], 1),
-        createTime: parseServerTime(m['create_time']),
-      );
+    id: asInt(m['id']),
+    externalUserId: asString(m['external_user_id']),
+    account: asString(m['account']),
+    name: asString(m['name']),
+    phone: asString(m['phone']),
+    email: asString(m['email']),
+    avatar: asString(m['avatar']),
+    remark: asString(m['remark']),
+    projects: asString(m['projects']),
+    platform: asString(m['platform']),
+    status: asInt(m['status'], 1),
+    createTime: parseServerTime(m['create_time']),
+    tags: (m['tags'] is List)
+        ? (m['tags'] as List)
+              .whereType<Map>()
+              .map((e) => Tag.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+        : const [],
+  );
 }
 
 /// 消息。form_data 是开放接口提交的结构化数据，content 为 JSON 数组字符串。
@@ -432,19 +499,19 @@ class ChatMessage {
   }
 
   factory ChatMessage.fromJson(Map<String, dynamic> m) => ChatMessage(
-        id: asInt(m['id']),
-        sender: asString(m['sender']),
-        msgType: asString(m['msg_type'], 'text'),
-        formId: asInt(m['form_id']),
-        agentId: asInt(m['agent_id']),
-        content: asString(m['content']),
-        translatedContent: asString(m['translated_content']),
-        translatedLang: asString(m['translated_lang']),
-        senderName: asString(m['sender_name']),
-        senderAvatar: asString(m['sender_avatar']),
-        createTime: parseServerTime(m['create_time']),
-        formSeq: asInt(m['form_seq']),
-      );
+    id: asInt(m['id']),
+    sender: asString(m['sender']),
+    msgType: asString(m['msg_type'], 'text'),
+    formId: asInt(m['form_id']),
+    agentId: asInt(m['agent_id']),
+    content: asString(m['content']),
+    translatedContent: asString(m['translated_content']),
+    translatedLang: asString(m['translated_lang']),
+    senderName: asString(m['sender_name']),
+    senderAvatar: asString(m['sender_avatar']),
+    createTime: parseServerTime(m['create_time']),
+    formSeq: asInt(m['form_seq']),
+  );
 }
 
 /// 表单数据消息里一行：项目名 + 值（可能来自不同控件类型）
@@ -453,7 +520,11 @@ class FormDataItem {
   final String type;
   final dynamic value;
 
-  const FormDataItem({required this.keyName, required this.type, required this.value});
+  const FormDataItem({
+    required this.keyName,
+    required this.type,
+    required this.value,
+  });
 
   static List<FormDataItem> parseList(String content) {
     try {
@@ -478,14 +549,22 @@ class FormDataItem {
       case 'link':
         return asString(value);
       case 'tags':
-        if (value is List) return value.map((e) => asString(e)).where((e) => e.isNotEmpty).join('、');
+        if (value is List)
+          return value
+              .map((e) => asString(e))
+              .where((e) => e.isNotEmpty)
+              .join('、');
         return asString(value);
       case 'curve_graph':
       case 'bar_chart':
         if (value is Map) {
           final x = (value['x'] is List) ? value['x'] as List : const [];
           final y = (value['y'] is List) ? value['y'] as List : const [];
-          final n = y.isEmpty ? 0 : (x.isEmpty ? y.length : (x.length < y.length ? x.length : y.length));
+          final n = y.isEmpty
+              ? 0
+              : (x.isEmpty
+                    ? y.length
+                    : (x.length < y.length ? x.length : y.length));
           final parts = <String>[];
           for (var i = 0; i < n; i++) {
             final label = asString(x.length > i ? x[i] : '').trim();
@@ -502,7 +581,8 @@ class FormDataItem {
   /// 可点击打开的 http(s) 链接：`link` 类型或值本身就是绝对地址时返回 Uri
   Uri? get linkUri {
     final text = displayValue.trim();
-    if (!text.startsWith('http://') && !text.startsWith('https://')) return null;
+    if (!text.startsWith('http://') && !text.startsWith('https://'))
+      return null;
     return Uri.tryParse(text);
   }
 
@@ -559,16 +639,16 @@ class StatsTotals {
   );
 
   factory StatsTotals.fromJson(Map<String, dynamic> m) => StatsTotals(
-        conversations: asInt(m['conversations']),
-        aiAnswers: asInt(m['ai_answers']),
-        aiPerConversation: asDoubleOrNull(m['ai_per_conversation']),
-        humanConversations: asInt(m['human_conversations']),
-        humanRate: asDoubleOrNull(m['human_rate']),
-        transferRequests: asInt(m['transfer_requests']),
-        kbSearches: asInt(m['kb_searches']),
-        kbHits: asInt(m['kb_hits']),
-        kbHitRate: asDoubleOrNull(m['kb_hit_rate']),
-      );
+    conversations: asInt(m['conversations']),
+    aiAnswers: asInt(m['ai_answers']),
+    aiPerConversation: asDoubleOrNull(m['ai_per_conversation']),
+    humanConversations: asInt(m['human_conversations']),
+    humanRate: asDoubleOrNull(m['human_rate']),
+    transferRequests: asInt(m['transfer_requests']),
+    kbSearches: asInt(m['kb_searches']),
+    kbHits: asInt(m['kb_hits']),
+    kbHitRate: asDoubleOrNull(m['kb_hit_rate']),
+  );
 }
 
 class StatsPoint {
@@ -591,14 +671,14 @@ class StatsPoint {
   });
 
   factory StatsPoint.fromJson(Map<String, dynamic> m) => StatsPoint(
-        date: asString(m['date']),
-        conversations: asInt(m['conversations']),
-        aiAnswers: asInt(m['ai_answers']),
-        humanConversations: asInt(m['human_conversations']),
-        transfers: asInt(m['transfers']),
-        kbSearches: asInt(m['kb_searches']),
-        kbHits: asInt(m['kb_hits']),
-      );
+    date: asString(m['date']),
+    conversations: asInt(m['conversations']),
+    aiAnswers: asInt(m['ai_answers']),
+    humanConversations: asInt(m['human_conversations']),
+    transfers: asInt(m['transfers']),
+    kbSearches: asInt(m['kb_searches']),
+    kbHits: asInt(m['kb_hits']),
+  );
 }
 
 class KeywordCount {
@@ -607,10 +687,8 @@ class KeywordCount {
 
   const KeywordCount({required this.word, required this.count});
 
-  factory KeywordCount.fromJson(Map<String, dynamic> m) => KeywordCount(
-        word: asString(m['word']),
-        count: asInt(m['count']),
-      );
+  factory KeywordCount.fromJson(Map<String, dynamic> m) =>
+      KeywordCount(word: asString(m['word']), count: asInt(m['count']));
 }
 
 class TopKnowledge {
@@ -618,13 +696,17 @@ class TopKnowledge {
   final String title;
   final int count;
 
-  const TopKnowledge({required this.id, required this.title, required this.count});
+  const TopKnowledge({
+    required this.id,
+    required this.title,
+    required this.count,
+  });
 
   factory TopKnowledge.fromJson(Map<String, dynamic> m) => TopKnowledge(
-        id: asInt(m['id']),
-        title: asString(m['title']),
-        count: asInt(m['count']),
-      );
+    id: asInt(m['id']),
+    title: asString(m['title']),
+    count: asInt(m['count']),
+  );
 }
 
 class StatsSummary {
@@ -632,13 +714,17 @@ class StatsSummary {
   final String model;
   final DateTime? updateTime;
 
-  const StatsSummary({required this.content, required this.model, required this.updateTime});
+  const StatsSummary({
+    required this.content,
+    required this.model,
+    required this.updateTime,
+  });
 
   factory StatsSummary.fromJson(Map<String, dynamic> m) => StatsSummary(
-        content: asString(m['content']),
-        model: asString(m['model']),
-        updateTime: parseServerTime(m['update_time'] ?? m['create_time']),
-      );
+    content: asString(m['content']),
+    model: asString(m['model']),
+    updateTime: parseServerTime(m['update_time'] ?? m['create_time']),
+  );
 }
 
 class StatsData {
@@ -675,7 +761,9 @@ class StatsData {
 
   factory StatsData.fromJson(Map<String, dynamic> m) {
     final range = m['range'];
-    final rangeMap = range is Map ? Map<String, dynamic>.from(range) : const <String, dynamic>{};
+    final rangeMap = range is Map
+        ? Map<String, dynamic>.from(range)
+        : const <String, dynamic>{};
     final totalsRaw = m['totals'];
     final keywordsRaw = m['keywords'];
     final topRaw = m['top_knowledge'];
@@ -686,16 +774,29 @@ class StatsData {
       rangeStart: asString(rangeMap['start']),
       rangeEnd: asString(rangeMap['end']),
       series: seriesRaw is List
-          ? seriesRaw.whereType<Map>().map((e) => StatsPoint.fromJson(Map<String, dynamic>.from(e))).toList()
+          ? seriesRaw
+                .whereType<Map>()
+                .map((e) => StatsPoint.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : const [],
-      totals: totalsRaw is Map ? StatsTotals.fromJson(Map<String, dynamic>.from(totalsRaw)) : StatsTotals.empty,
+      totals: totalsRaw is Map
+          ? StatsTotals.fromJson(Map<String, dynamic>.from(totalsRaw))
+          : StatsTotals.empty,
       keywords: keywordsRaw is List
-          ? keywordsRaw.whereType<Map>().map((e) => KeywordCount.fromJson(Map<String, dynamic>.from(e))).toList()
+          ? keywordsRaw
+                .whereType<Map>()
+                .map((e) => KeywordCount.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : const [],
       topKnowledge: topRaw is List
-          ? topRaw.whereType<Map>().map((e) => TopKnowledge.fromJson(Map<String, dynamic>.from(e))).toList()
+          ? topRaw
+                .whereType<Map>()
+                .map((e) => TopKnowledge.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : const [],
-      summary: summaryRaw is Map ? StatsSummary.fromJson(Map<String, dynamic>.from(summaryRaw)) : null,
+      summary: summaryRaw is Map
+          ? StatsSummary.fromJson(Map<String, dynamic>.from(summaryRaw))
+          : null,
     );
   }
 }

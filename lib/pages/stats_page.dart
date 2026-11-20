@@ -51,9 +51,9 @@ class _StatsPageState extends State<StatsPage> {
       setState(() {
         _projects = data is List
             ? data
-                .whereType<Map>()
-                .map((e) => Project.fromJson(Map<String, dynamic>.from(e)))
-                .toList()
+                  .whereType<Map>()
+                  .map((e) => Project.fromJson(Map<String, dynamic>.from(e)))
+                  .toList()
             : const [];
       });
     } catch (_) {
@@ -73,13 +73,12 @@ class _StatsPageState extends State<StatsPage> {
     try {
       final data = await api.get(
         '/admin/stats/overview',
-        query: {
-          'days': _days,
-          if (_projectId > 0) 'project_id': _projectId,
-        },
+        query: {'days': _days, if (_projectId > 0) 'project_id': _projectId},
       );
       if (!mounted || seq != _reqSeq) return;
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       final parsed = StatsData.fromJson(m);
       setState(() {
         _data = parsed;
@@ -103,7 +102,10 @@ class _StatsPageState extends State<StatsPage> {
     setState(() => _summing = true);
     try {
       final code = AppStrings.current.code;
-      final body = <String, dynamic>{'days': _days, 'lang': code.startsWith('zh') ? 'zh' : code};
+      final body = <String, dynamic>{
+        'days': _days,
+        'lang': code.startsWith('zh') ? 'zh' : code,
+      };
       if (_projectId > 0) body['project_id'] = _projectId;
       final data = await api.post(
         '/admin/stats/summary',
@@ -240,8 +242,13 @@ class _StatsPageState extends State<StatsPage> {
       tooltip: AppStrings.current.projectFilter,
       onSelected: _setProject,
       itemBuilder: (context) => <PopupMenuEntry<int>>[
-        PopupMenuItem<int>(value: 0, child: Text(AppStrings.current.allProjects)),
-        ..._projects.map((p) => PopupMenuItem<int>(value: p.id, child: Text(p.name))),
+        PopupMenuItem<int>(
+          value: 0,
+          child: Text(AppStrings.current.allProjects),
+        ),
+        ..._projects.map(
+          (p) => PopupMenuItem<int>(value: p.id, child: Text(p.name)),
+        ),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -249,7 +256,9 @@ class _StatsPageState extends State<StatsPage> {
           color: active ? AppColors.accent.withOpacity(0.14) : AppColors.panel2,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? AppColors.accent.withOpacity(0.55) : AppColors.border,
+            color: active
+                ? AppColors.accent.withOpacity(0.55)
+                : AppColors.border,
           ),
         ),
         child: Row(
@@ -343,7 +352,10 @@ class _StatsPageState extends State<StatsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11.5, color: AppColors.textDim)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11.5, color: AppColors.textDim),
+          ),
           const SizedBox(height: 6),
           Text(
             value,
@@ -357,7 +369,11 @@ class _StatsPageState extends State<StatsPage> {
           const SizedBox(height: 5),
           Text(
             sub,
-            style: const TextStyle(fontSize: 10.5, color: AppColors.textMute, height: 1.4),
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: AppColors.textMute,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -398,7 +414,10 @@ class _StatsPageState extends State<StatsPage> {
           ),
         ),
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(fontSize: 10.5, color: AppColors.textDim)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10.5, color: AppColors.textDim),
+        ),
       ],
     );
   }
@@ -488,8 +507,13 @@ class _StatsPageState extends State<StatsPage> {
         ),
       );
     }
-    final maxY = [...spotsA, ...spotsB].fold<double>(1, (m, s) => math.max(m, s.y));
-    final maxX = _data.series.length <= 1 ? 1.0 : (_data.series.length - 1).toDouble();
+    final maxY = [
+      ...spotsA,
+      ...spotsB,
+    ].fold<double>(1, (m, s) => math.max(m, s.y));
+    final maxX = _data.series.length <= 1
+        ? 1.0
+        : (_data.series.length - 1).toDouble();
     final yInterval = maxY <= 4 ? 1.0 : (maxY / 4).ceilToDouble();
     final showDots = _data.series.length <= 32;
     return LineChart(
@@ -531,7 +555,10 @@ class _StatsPageState extends State<StatsPage> {
             color: colorA,
             barWidth: 1.8,
             dotData: FlDotData(show: showDots),
-            belowBarData: BarAreaData(show: true, color: colorA.withOpacity(0.10)),
+            belowBarData: BarAreaData(
+              show: true,
+              color: colorA.withOpacity(0.10),
+            ),
           ),
           LineChartBarData(
             spots: spotsB,
@@ -541,7 +568,10 @@ class _StatsPageState extends State<StatsPage> {
             barWidth: dashedB ? 1.4 : 1.8,
             dashArray: dashedB ? const [4, 4] : null,
             dotData: FlDotData(show: showDots),
-            belowBarData: BarAreaData(show: areaB, color: colorB.withOpacity(0.08)),
+            belowBarData: BarAreaData(
+              show: areaB,
+              color: colorB.withOpacity(0.08),
+            ),
           ),
         ],
       ),
@@ -562,7 +592,9 @@ class _StatsPageState extends State<StatsPage> {
         .fold<int>(1, math.max)
         .toDouble();
     final yInterval = maxY <= 4 ? 1.0 : (maxY / 4).ceilToDouble();
-    final barWidth = _data.series.length > 60 ? 2.0 : (_data.series.length > 30 ? 3.5 : 6.0);
+    final barWidth = _data.series.length > 60
+        ? 2.0
+        : (_data.series.length > 30 ? 3.5 : 6.0);
     return BarChart(
       BarChartData(
         minY: 0,
@@ -579,7 +611,10 @@ class _StatsPageState extends State<StatsPage> {
           ),
         ),
         borderData: FlBorderData(show: false),
-        titlesData: _titlesData(yInterval),
+        titlesData: _titlesData(
+          yInterval,
+          bottomStride: _bottomStride(_data.series.length),
+        ),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipColor: (group) => AppColors.panel2,
@@ -599,13 +634,17 @@ class _StatsPageState extends State<StatsPage> {
                   toY: _data.series[i].kbSearches.toDouble(),
                   color: AppColors.accent.withOpacity(0.45),
                   width: barWidth,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(2),
+                  ),
                 ),
                 BarChartRodData(
                   toY: _data.series[i].kbHits.toDouble(),
                   color: AppColors.ok,
                   width: barWidth,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(2),
+                  ),
                 ),
               ],
             ),
@@ -614,7 +653,11 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
-  FlTitlesData _titlesData(double yInterval) {
+  /// BarChart 不支持 SideTitles.interval 抽样（每个 x 下标都会回调），
+  /// 90 天时日期标签会全部挤在一起；改用掩码只绘制抽样位置的标签
+  static int _bottomStride(int count) => math.max(1, (count / 5).ceil());
+
+  FlTitlesData _titlesData(double yInterval, {int? bottomStride}) {
     final labels = _dateLabels;
     final xInterval = math.max(1.0, (labels.length / 4).ceilToDouble());
     return FlTitlesData(
@@ -635,15 +678,24 @@ class _StatsPageState extends State<StatsPage> {
         sideTitles: SideTitles(
           showTitles: true,
           reservedSize: 20,
-          interval: xInterval,
+          // 柱状图靠掩码抽样，不能设 interval（会把抽样位置一起过滤掉）
+          interval: bottomStride == null ? xInterval : null,
           getTitlesWidget: (value, meta) {
             final i = value.round();
             if (i < 0 || i >= labels.length) return const SizedBox.shrink();
+            if (bottomStride != null &&
+                bottomStride > 1 &&
+                i % bottomStride != 0) {
+              return const SizedBox.shrink();
+            }
             return Padding(
               padding: const EdgeInsets.only(top: 3),
               child: Text(
                 labels[i],
-                style: const TextStyle(fontSize: 8.5, color: AppColors.textMute),
+                style: const TextStyle(
+                  fontSize: 8.5,
+                  color: AppColors.textMute,
+                ),
               ),
             );
           },
@@ -669,7 +721,10 @@ class _StatsPageState extends State<StatsPage> {
               children: keywords.map((k) {
                 final size = _keywordSize(k.count, keywords.first.count);
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.panel2,
                     borderRadius: BorderRadius.circular(8),
@@ -680,12 +735,19 @@ class _StatsPageState extends State<StatsPage> {
                     children: [
                       Text(
                         k.word,
-                        style: TextStyle(fontSize: size, color: AppColors.text, height: 1.2),
+                        style: TextStyle(
+                          fontSize: size,
+                          color: AppColors.text,
+                          height: 1.2,
+                        ),
                       ),
                       const SizedBox(width: 5),
                       Text(
                         '${k.count}',
-                        style: const TextStyle(fontSize: 9.5, color: AppColors.accent),
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          color: AppColors.accent,
+                        ),
                       ),
                     ],
                   ),
@@ -698,7 +760,10 @@ class _StatsPageState extends State<StatsPage> {
   /// 与管理端一致：词频取对数映射到 12~18px，最多的词最大
   double _keywordSize(int count, int max) {
     final m = max <= 1 ? 1 : max;
-    final r = (math.log(math.max(1, count)) / math.log(math.max(2, m))).clamp(0.0, 1.0);
+    final r = (math.log(math.max(1, count)) / math.log(math.max(2, m))).clamp(
+      0.0,
+      1.0,
+    );
     return 12 + r * 6;
   }
 
@@ -718,7 +783,9 @@ class _StatsPageState extends State<StatsPage> {
               children: [
                 for (var i = 0; i < list.length; i++)
                   Padding(
-                    padding: EdgeInsets.only(bottom: i == list.length - 1 ? 0 : 10),
+                    padding: EdgeInsets.only(
+                      bottom: i == list.length - 1 ? 0 : 10,
+                    ),
                     child: Row(
                       children: [
                         SizedBox(
@@ -727,7 +794,9 @@ class _StatsPageState extends State<StatsPage> {
                             '${i + 1}',
                             style: TextStyle(
                               fontSize: 10.5,
-                              color: i < 3 ? AppColors.signal : AppColors.textMute,
+                              color: i < 3
+                                  ? AppColors.signal
+                                  : AppColors.textMute,
                             ),
                           ),
                         ),
@@ -739,7 +808,10 @@ class _StatsPageState extends State<StatsPage> {
                                 list[i].title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12, color: AppColors.text),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.text,
+                                ),
                               ),
                               const SizedBox(height: 5),
                               ClipRRect(
@@ -748,7 +820,10 @@ class _StatsPageState extends State<StatsPage> {
                                   value: max > 0 ? list[i].count / max : 0,
                                   minHeight: 4,
                                   backgroundColor: AppColors.panel2,
-                                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        AppColors.accent,
+                                      ),
                                 ),
                               ),
                             ],
@@ -757,7 +832,10 @@ class _StatsPageState extends State<StatsPage> {
                         const SizedBox(width: 10),
                         Text(
                           '${list[i].count}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.textDim),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textDim,
+                          ),
                         ),
                       ],
                     ),
@@ -798,7 +876,11 @@ class _StatsPageState extends State<StatsPage> {
           if (summary != null) ...[
             Text(
               summary.content,
-              style: const TextStyle(fontSize: 12.5, color: AppColors.textDim, height: 1.75),
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: AppColors.textDim,
+                height: 1.75,
+              ),
             ),
             const SizedBox(height: 10),
             Text(

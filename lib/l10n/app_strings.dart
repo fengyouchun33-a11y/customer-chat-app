@@ -94,7 +94,8 @@ class AppStrings {
   static String codeOf(Locale locale) {
     if (locale.languageCode == 'zh') {
       final country = (locale.countryCode ?? '').toUpperCase();
-      final isTraditional = locale.scriptCode == 'Hant' ||
+      final isTraditional =
+          locale.scriptCode == 'Hant' ||
           country == 'TW' ||
           country == 'HK' ||
           country == 'MO';
@@ -127,7 +128,9 @@ class AppStrings {
 
   /// MaterialApp 的系统语言解析回调：按语言匹配，并处理 zh 的简繁之分。
   static Locale? resolveSystemLocales(
-      List<Locale>? locales, Iterable<Locale> supported) {
+    List<Locale>? locales,
+    Iterable<Locale> supported,
+  ) {
     if (locales == null || locales.isEmpty) return null;
     return localeOf(codeOf(locales.first));
   }
@@ -193,6 +196,12 @@ class AppStrings {
   String get keepAliveAndroidBody => _t('keepAliveAndroidBody');
   String get keepAliveIosBody => _t('keepAliveIosBody');
   String get goEnable => _t('goEnable');
+
+  // Agent support SDK (menu entry + WebView-embedded visitor H5)
+  String get supportEntry => _t('supportEntry');
+  String get supportTitle => _t('supportTitle');
+  String get supportLoading => _t('supportLoading');
+  String get supportUnavailable => _t('supportUnavailable');
   String get notifOn => _t('notifOn');
   String get notifOff => _t('notifOff');
   String get bgOn => _t('bgOn');
@@ -294,6 +303,20 @@ class AppStrings {
   // 发送前翻译预览（客服确认/编辑将下发给访客 H5 的译文）
   String get attachImage => _t('attachImage');
   String get previewTranslation => _t('previewTranslation');
+  // 「+」面板里的邀请评价：把带应用市场链接的 Markdown 卡片插入回复发给访客
+  String get inviteReview => _t('inviteReview');
+  String get reviewInviteIntro => _t('reviewInviteIntro');
+  String get reviewInvitePlay => _t('reviewInvitePlay');
+  String get reviewInviteAppStore => _t('reviewInviteAppStore');
+  // 邀请卡片里的行动按钮文案(按访客平台只配一条链接后不再点名商店)
+  String get reviewInviteGo => _t('reviewInviteGo');
+  // 点击邀请评价但对应市场链接未配置: modal 告知 Web 管理后台的配置路径
+  String reviewLinkNotConfigured(String store) =>
+      _fmt('reviewLinkNotConfigured', [store]);
+  // 已配置时的发送确认弹窗标题(下方预览卡片, 确认后直发不入输入框)
+  String get reviewInviteSendTitle => _t('reviewInviteSendTitle');
+  // 确认弹窗里的发送按钮(聊天页发送钮是纯图标, 词表无现成"发送")
+  String get reviewInviteSendBtn => _t('reviewInviteSendBtn');
   String get visitorWillSee => _t('visitorWillSee');
   String get retranslate => _t('retranslate');
   String get translationSameLang => _t('translationSameLang');
@@ -327,6 +350,52 @@ class AppStrings {
   String get contactSaved => _t('contactSaved');
   String get contactDeleted => _t('contactDeleted');
   String get openConversation => _t('openConversation');
+
+  // 访客标签（聊天页/联系人页勾选，仅租户管理员可管理标签）
+  String get tags => _t('tags');
+  String get setTags => _t('setTags');
+  String get manageTags => _t('manageTags');
+  String get noTags => _t('noTags');
+  String get noTagsHint => _t('noTagsHint');
+  String get noTagsHintManage => _t('noTagsHintManage');
+  String get searchTags => _t('searchTags');
+  String get noTagMatch => _t('noTagMatch');
+  String get tagFilter => _t('tagFilter');
+  String get filterTags => _t('filterTags');
+  String tagFilterCount(String n) => _fmt('tagFilterCount', [n]);
+  String get newTag => _t('newTag');
+  String get editTag => _t('editTag');
+  String get tagName => _t('tagName');
+  String get deleteTag => _t('deleteTag');
+  String get deleteTagConfirm => _t('deleteTagConfirm');
+  String get tagsUpdated => _t('tagsUpdated');
+  String get done => _t('done');
+
+  // 访客访问平台：服务端按打开 H5 时的 User-Agent 识别后存 chat_user.platform，客服端只展示
+  String get platformLabel => _t('platformLabel');
+
+  /// 平台码翻译成当前语言，码集与服务端 chatCore.PLATFORM_RULES 一致。
+  /// 空值（老访客没打开过 H5）和认不出的码统一按“未识别”展示，列表里留白分不清是没数据还是漏翻译。
+  String platformText(String code) {
+    switch (code.trim().toLowerCase()) {
+      case 'android':
+        return _t('platAndroid');
+      case 'ios':
+        return _t('platIos');
+      case 'harmony':
+        return _t('platHarmony');
+      case 'windows':
+        return _t('platWindows');
+      case 'macos':
+        return _t('platMacos');
+      case 'linux':
+        return _t('platLinux');
+      case 'other':
+        return _t('platOther');
+      default:
+        return _t('platUnknown');
+    }
+  }
 
   // 统计
   String get summaryUpdated => _t('summaryUpdated');

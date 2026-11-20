@@ -49,6 +49,10 @@ const Map<String, String> frStrings = {
   'keepAliveIosBody':
       'Pour voir les messages des visiteurs dans le centre de notifications, autorisez les notifications.\n\nSur iOS, les alertes en temps réel sont gérées par le push système (APNs) ; l\'application n\'a pas besoin de rester en arrière-plan.',
   'goEnable': 'Activer',
+  'supportEntry': 'Contacter le support',
+  'supportTitle': 'Support en ligne',
+  'supportLoading': 'Connexion au support…',
+  'supportUnavailable': 'Le support est temporairement indisponible. Veuillez réessayer plus tard.',
   'notifOn': 'Notifications activées',
   'notifOff': 'Notifications non autorisées',
   'bgOn': 'Exécution en arrière-plan autorisée',
@@ -103,8 +107,10 @@ const Map<String, String> frStrings = {
   'unassigned': 'Non attribuée',
   'assign': 'Attribuer un agent',
   'reassign': 'Transférer à un autre agent',
-  'assignTip': 'Seuls les membres activés, participant à l\'attribution et autorisés pour ce projet sont listés (les admins de tenant ne sont pas limités par projet). Les membres hors ligne ou hors plage peuvent être attribués, mais le visiteur attendra leur retour en ligne.',
-  'assignEmpty': 'Aucun membre attribuable : dans Membres, autorisez ce projet et activez la participation à l\'attribution',
+  'assignTip':
+      'Seuls les membres activés, participant à l\'attribution et autorisés pour ce projet sont listés (les admins de tenant ne sont pas limités par projet). Les membres hors ligne ou hors plage peuvent être attribués, mais le visiteur attendra leur retour en ligne.',
+  'assignEmpty':
+      'Aucun membre attribuable : dans Membres, autorisez ce projet et activez la participation à l\'attribution',
   'assignCurrent': 'Actuel',
   'assignOffDuty': 'Hors plage',
   'agentLoad': '{0} en cours',
@@ -152,6 +158,15 @@ const Map<String, String> frStrings = {
   'replyHint': 'Saisissez une réponse…',
   'attachImage': 'Image',
   'previewTranslation': 'Aperçu de la traduction',
+  'inviteReview': 'Évaluer',
+  'reviewInviteIntro':
+      'Si cette application vous est utile, notez-la avec 5 étoiles sur le store :',
+  'reviewInvitePlay': 'Google Play',
+  'reviewInviteAppStore': 'App Store',
+  'reviewInviteGo': 'Évaluer l’application sur le store',
+  'reviewInviteSendTitle': 'Envoyer l’invitation d’évaluation ?',
+  'reviewInviteSendBtn': 'Envoyer',
+  'reviewLinkNotConfigured': 'Le lien {0} n’est pas configuré. Demandez à un administrateur d’ouvrir Gestion des projets dans la console web, de modifier ce projet (type APP) et de renseigner le lien du store, puis réessayez.',
   'visitorWillSee': 'Ce que recevra le visiteur (modifiable)',
   'retranslate': 'Retraduire',
   'translationSameLang': 'Déjà dans la langue du visiteur',
@@ -165,7 +180,8 @@ const Map<String, String> frStrings = {
   'userProject': 'Projet',
   'userRegTime': "Date d'inscription",
   'userRemark': 'Remarque',
-  'userInfoLoadFailed': 'Erreur lors du chargement des informations utilisateur',
+  'userInfoLoadFailed':
+      'Erreur lors du chargement des informations utilisateur',
 
   // Statistiques
   'summaryUpdated': 'Résumé mis à jour',
@@ -251,7 +267,15 @@ const Map<String, String> frStrings = {
   'loginIntroEntry': 'Présentation de la plateforme',
   'loginRegisterEntry': 'Inscription entreprise',
   'introBody':
-      'Une plateforme de support client complète, du back-office web à l\'app mobile\n\n· Réception multicanal : les demandes des clients venant du site web, de l\'app et des mini-programmes sont réunies dans un seul espace de travail\n· Back-office entreprise : après inscription, configurez les règles de réception, les équipes d\'agents et la base de connaissances dans le back-office web\n· Service mobile : les conversations sont poussées en temps réel sur le téléphone ; même en déplacement, vous pouvez prendre le relais, attribuer et répondre\n· Tableau de bord : volume de conversations, temps de première réponse et tendances de satisfaction en un coup d\'œil\n· Disponible partout : 11 langues suivent automatiquement le système, pour les équipes internationales\n\nComment démarrer : ouvrez d\'abord support.breathmeters.net dans un navigateur sur PC pour enregistrer votre entreprise et configurer le back-office, puis connectez-vous à cette app avec le même compte entreprise pour assurer le service',
+      '''Une plateforme de support client complète, du back-office web à l'app mobile
+
+· Réception multicanal : les demandes des clients venant du site web et de l'app sont réunies dans un seul espace de travail
+· Back-office entreprise : après inscription, configurez les règles de réception, les équipes d'agents et la base de connaissances dans le back-office web
+· Service mobile : les conversations sont poussées en temps réel sur le téléphone ; même en déplacement, vous pouvez prendre le relais, attribuer et répondre
+· Tableau de bord : volume de conversations, temps de première réponse et tendances de satisfaction en un coup d'œil
+· Disponible partout : 11 langues suivent automatiquement le système, pour les équipes internationales
+
+Comment démarrer : ouvrez d'abord https://reflexassist.com dans un navigateur sur PC pour enregistrer votre entreprise et configurer le back-office, puis connectez-vous à cette app avec le même compte entreprise pour assurer le service''',
   'registerBody':
       'L\'inscription d\'une entreprise doit être effectuée dans le navigateur d\'un PC.\nCopiez le lien ci-dessous et ouvrez-le sur un PC.\n\nL\'app mobile sert uniquement à se connecter avec un compte entreprise déjà enregistré.',
   'copyLink': 'Copier le lien',
@@ -261,16 +285,49 @@ const Map<String, String> frStrings = {
   // Contacts
   'tabContacts': 'Contacts',
   'contactsSearchHint': 'Rechercher nom / compte / téléphone / e-mail',
-  'contactsSyncTip': 'Les contacts sont synchronisés automatiquement par l’API ouverte ; seules les infos d’affichage sont gérées ici',
+  'contactsSyncTip':
+      'Les contacts sont synchronisés automatiquement par l’API ouverte ; seules les infos d’affichage sont gérées ici',
   'contactsEmpty': 'Aucun contact',
   'contactsLoadFailed': 'Échec du chargement des contacts',
   'contactEnabled': 'Activé',
   'contactDisabled': 'Désactivé',
   'editContact': 'Modifier le contact',
   'deleteContact': 'Supprimer',
-  'deleteContactConfirm': 'Supprimer ce contact ? Les conversations existantes ne sont pas affectées.',
+  'deleteContactConfirm':
+      'Supprimer ce contact ? Les conversations existantes ne sont pas affectées.',
   'save': 'Enregistrer',
   'contactSaved': 'Enregistré',
   'contactDeleted': 'Supprimé',
   'openConversation': 'Ouvrir la conversation',
+  'tags': 'Étiquettes',
+  'setTags': 'Définir les étiquettes',
+  'manageTags': 'Gérer les étiquettes',
+  'noTags': 'Aucune étiquette',
+  'noTagsHint':
+      'Demandez à un administrateur de créer des étiquettes dans la console web',
+  'noTagsHintManage': 'Aucune étiquette. Appuyez sur + pour en créer',
+  'searchTags': 'Rechercher des étiquettes',
+  'noTagMatch': 'Aucune étiquette correspondante',
+  'tagFilter': 'Étiquettes',
+  'filterTags': 'Filtrer par étiquettes',
+  'tagFilterCount': 'Étiquettes · {0}',
+  'newTag': 'Nouvelle étiquette',
+  'editTag': "Modifier l'étiquette",
+  'tagName': "Nom de l'étiquette",
+  'deleteTag': "Supprimer l'étiquette",
+  'deleteTagConfirm':
+      "Supprimer cette étiquette ? Elle sera retirée de tous les visiteurs.",
+  'tagsUpdated': 'Étiquettes mises à jour',
+  'done': 'Terminé',
+
+  // Plateforme du visiteur : détectée côté serveur d'après le User-Agent du H5, stockée dans chat_user.platform
+  'platformLabel': 'Plateforme',
+  'platAndroid': 'Android',
+  'platIos': 'iOS',
+  'platHarmony': 'HarmonyOS',
+  'platWindows': 'Windows',
+  'platMacos': 'macOS',
+  'platLinux': 'Linux',
+  'platOther': 'Autres',
+  'platUnknown': 'Inconnue',
 };

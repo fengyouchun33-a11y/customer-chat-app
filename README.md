@@ -12,7 +12,7 @@
   - 选择后调用 `POST /api/admin/tenant/switch` 落库为「最近使用租户」，并写入 `X-Tenant-Id`。
   - 工作台右上角可随时切换租户，切换后整个工作台按新租户重建数据。
 - 普通成员 / 租户管理员直接使用登录响应里的租户，无需选择。
-- 服务器地址固定为 `https://support.breathmeters.net`，App 内不提供修改入口；请求返回 `-401` 时自动清除本地会话回到登录页。
+- 服务器地址固定为 `https://my.reflexassist.com`，App 内不提供修改入口；请求返回 `-401` 时自动清除本地会话回到登录页。
 
 ### 会话列表 Tab
 - 筛选：状态（全部 / 进行中 / 需人工 / 已关闭）、项目、关键词搜索（350ms 防抖）。
@@ -214,7 +214,7 @@ powershell -ExecutionPolicy Bypass -File tool/run_android.ps1 -BuildOnly
 新环境首次构建前需要先生成平台目录（本仓库已包含）：`flutter create --platforms=android,ios .`，
 然后执行 `tool/configure_platform.ps1` 写入权限、minSdk、前台服务与通知配置。
 
-服务器地址固定为 `https://support.breathmeters.net`，登录页不再提供修改入口；
+服务器地址固定为 `https://my.reflexassist.com`，登录页不再提供修改入口；
 本地联调需要换地址时，改 `lib/config/app_config.dart` 里的 `defaultBaseUrl` 重新打包即可。
 
 ### 4. 通知与后台保活配置（脚本已自动处理）

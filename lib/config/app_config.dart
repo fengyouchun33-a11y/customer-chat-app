@@ -3,7 +3,7 @@
 /// 服务器地址固定为正式域名，App 内不提供修改入口。
 class AppConfig {
   /// 正式服务器地址（固定值）。本地联调需要换地址时改这一行重新打包。
-  static const String defaultBaseUrl = 'https://support.breathmeters.net';
+  static const String defaultBaseUrl = 'https://my.reflexassist.com';
 
   /// 管理端接口统一前缀，与 keiyo-chat-server 的 router 一致
   static const String apiPrefix = '/api';

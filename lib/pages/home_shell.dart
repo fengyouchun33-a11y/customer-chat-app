@@ -11,6 +11,8 @@ import '../services/background_watch_service.dart';
 import '../services/notification_service.dart';
 import '../services/sound_service.dart';
 import '../state/app_state.dart';
+import '../support/support_chat_page.dart';
+import '../support/support_sdk.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'chat_page.dart';
@@ -174,9 +176,9 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Future<void> _openTenantPicker() async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const TenantSelectPage()),
-    );
+    await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const TenantSelectPage()));
     if (!mounted) return;
     setState(() {});
   }
@@ -187,7 +189,8 @@ class _HomeShellState extends State<HomeShell> {
     try {
       await state.setAutoTranslate(next);
       final s = AppStrings.current;
-      if (mounted) showSnack(context, next ? s.translateOnToast : s.translateOffToast);
+      if (mounted)
+        showSnack(context, next ? s.translateOnToast : s.translateOffToast);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     }
@@ -201,14 +204,66 @@ class _HomeShellState extends State<HomeShell> {
         title: Text(s.logout),
         content: Text(s.logoutConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.logoutAction)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(s.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(s.logoutAction),
+          ),
         ],
       ),
     );
     if (ok == true && mounted) {
-      await context.read<AppState>().logout();
+      // context must not be used after an await; capture the state first
+      final state = context.read<AppState>();
+      // The support conversation is bound to the account: clear the cache on
+      // logout so the next one never inherits it
+      await SupportSdk.instance.clear();
+      await state.logout();
     }
+  }
+
+  /// Contact support: the SDK resolves the fixed chat URL, then we open the
+  /// WebView page (SDK itself lives in lib/support/)
+  Future<void> _openSupport() async {
+    final s = AppStrings.current;
+    final state = context.read<AppState>();
+    final admin = state.admin;
+    if (admin == null) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Text(s.supportLoading)),
+          ],
+        ),
+      ),
+    );
+    String? url;
+    try {
+      url = await SupportSdk.instance.resolveChatUrl(admin);
+    } catch (_) {
+      // failures all surface through the url == null branch below
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop(); // dismiss the loading dialog
+    if (url == null) {
+      showSnack(context, s.supportUnavailable, error: true);
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => SupportChatPage(url: url!)),
+    );
   }
 
   PopupMenuItem<String> _menuItem(String value, IconData icon, String label) {
@@ -244,19 +299,29 @@ class _HomeShellState extends State<HomeShell> {
           children: [
             Text(
               s.workbenchTitle,
-              style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 2),
             Row(
               children: [
-                const Icon(Icons.domain_outlined, size: 11, color: AppColors.textMute),
+                const Icon(
+                  Icons.domain_outlined,
+                  size: 11,
+                  color: AppColors.textMute,
+                ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     tenantName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      color: AppColors.textMute,
+                    ),
                   ),
                 ),
               ],
@@ -268,7 +333,11 @@ class _HomeShellState extends State<HomeShell> {
             IconButton(
               tooltip: s.switchTenant,
               onPressed: _openTenantPicker,
-              icon: const Icon(Icons.swap_horiz, size: 20, color: AppColors.textDim),
+              icon: const Icon(
+                Icons.swap_horiz,
+                size: 20,
+                color: AppColors.textDim,
+              ),
             ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.textDim),
@@ -285,6 +354,9 @@ class _HomeShellState extends State<HomeShell> {
                   break;
                 case 'language':
                   showLanguagePicker(context);
+                  break;
+                case 'support':
+                  _openSupport();
                   break;
                 case 'logout':
                   _logout();
@@ -314,6 +386,7 @@ class _HomeShellState extends State<HomeShell> {
               if (state.isPlatform)
                 _menuItem('tenant', Icons.swap_horiz, s.switchTenant),
               const PopupMenuDivider(),
+              _menuItem('support', Icons.headset_mic_outlined, s.supportEntry),
               _menuItem('logout', Icons.logout, s.logout),
             ],
           ),

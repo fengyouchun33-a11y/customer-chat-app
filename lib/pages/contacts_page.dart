@@ -11,6 +11,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
+import '../widgets/tag_picker.dart';
 import 'chat_page.dart';
 
 /// 联系人页：与 Web 管理端 UserList 同口径
@@ -29,10 +30,12 @@ class _ContactsPageState extends State<ContactsPage> {
 
   List<Contact> _items = const [];
   List<Project> _projects = const [];
+  List<Tag> _tagCatalog = const [];
   int _page = 1;
   int _total = 0;
   int _projectId = 0;
   String _keyword = '';
+  final List<int> _tagIds = [];
   bool _loading = true;
   bool _loadingMore = false;
   String? _error;
@@ -41,6 +44,7 @@ class _ContactsPageState extends State<ContactsPage> {
   void initState() {
     super.initState();
     _loadProjects();
+    _loadTagCatalog();
     _refresh();
   }
 
@@ -52,11 +56,13 @@ class _ContactsPageState extends State<ContactsPage> {
   }
 
   Map<String, dynamic> _query(int page) => {
-        'page': page,
-        'pageSize': AppConfig.pageSize,
-        'keyword': _keyword,
-        if (_projectId > 0) 'project_id': _projectId,
-      };
+    'page': page,
+    'pageSize': AppConfig.pageSize,
+    'keyword': _keyword,
+    if (_projectId > 0) 'project_id': _projectId,
+    // 逗号分隔与 Web 后台同一口径; 服务端多标签取交集
+    if (_tagIds.isNotEmpty) 'tag_ids': _tagIds.join(','),
+  };
 
   List<Contact> _parseList(dynamic raw) {
     if (raw is! List) return const [];
@@ -74,9 +80,9 @@ class _ContactsPageState extends State<ContactsPage> {
       setState(() {
         _projects = data is List
             ? data
-                .whereType<Map>()
-                .map((e) => Project.fromJson(Map<String, dynamic>.from(e)))
-                .toList()
+                  .whereType<Map>()
+                  .map((e) => Project.fromJson(Map<String, dynamic>.from(e)))
+                  .toList()
             : const [];
       });
     } catch (_) {
@@ -84,11 +90,23 @@ class _ContactsPageState extends State<ContactsPage> {
     }
   }
 
+  Future<void> _loadTagCatalog() async {
+    final api = context.read<AppState>().api;
+    try {
+      final list = await fetchTagCatalog(api);
+      if (mounted) setState(() => _tagCatalog = list);
+    } catch (_) {
+      // 标签目录拿不到不阻塞列表, 筛选按钮仍可点(弹层里为空)
+    }
+  }
+
   Future<void> _refresh() async {
     final api = context.read<AppState>().api;
     try {
       final data = await api.get('/admin/user/list', query: _query(1));
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       final list = _parseList(m['list']);
       final total = asInt(m['total']);
       if (!mounted) return;
@@ -116,7 +134,9 @@ class _ContactsPageState extends State<ContactsPage> {
     setState(() => _loadingMore = true);
     try {
       final data = await api.get('/admin/user/list', query: _query(next));
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       final list = _parseList(m['list']);
       if (!mounted) return;
       final exists = _items.map((e) => e.id).toSet();
@@ -149,6 +169,147 @@ class _ContactsPageState extends State<ContactsPage> {
     _resetAndLoad();
   }
 
+  /// 标签筛选弹层: 多选(交集), 确定后重跑服务端分页筛选
+  Future<void> _openTagFilter() async {
+    final s = AppStrings.current;
+    final sel = <int>{..._tagIds};
+    List<Tag> catalog = _tagCatalog;
+    String query = '';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      // 同标签勾选弹层: edge-to-edge 下避开状态栏, 底部自备导航条留白
+      useSafeArea: true,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final mq = MediaQuery.of(ctx);
+            final bottomGap = mq.viewInsets.bottom > mq.padding.bottom
+                ? mq.viewInsets.bottom
+                : mq.padding.bottom;
+            final q = query.trim().toLowerCase();
+            final shown = q.isEmpty
+                ? catalog
+                : catalog
+                      .where((t) => t.name.toLowerCase().contains(q))
+                      .toList();
+            return Padding(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, bottomGap + 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    s.filterTags,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (catalog.isNotEmpty)
+                    TextField(
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: s.searchTags,
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      onChanged: (v) => setSheetState(() => query = v),
+                    ),
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: catalog.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 28),
+                            child: Text(
+                              s.noTags,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.textMute,
+                              ),
+                            ),
+                          )
+                        : shown.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 28),
+                            child: Text(
+                              s.noTagMatch,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.textMute,
+                              ),
+                            ),
+                          )
+                        : ListView(
+                            shrinkWrap: true,
+                            children: [
+                              for (final t in shown)
+                                _buildFilterTagOption(
+                                  t,
+                                  sel.contains(t.id),
+                                  (checked) => setSheetState(() {
+                                    if (checked) {
+                                      sel.add(t.id);
+                                    } else {
+                                      sel.remove(t.id);
+                                    }
+                                  }),
+                                ),
+                            ],
+                          ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            // 清空并直接应用(关闭弹层)
+                            setState(() => _tagIds.clear());
+                            _resetAndLoad();
+                            Navigator.pop(ctx);
+                          },
+                          child: Text(s.resetFilters),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            setState(() {
+                              _tagIds
+                                ..clear()
+                                ..addAll(sel);
+                            });
+                            _resetAndLoad();
+                            Navigator.pop(ctx);
+                          },
+                          child: Text(s.confirm),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _onSearchChanged(String value) {
     setState(() {}); // 同步清除按钮的显示
     _debounce?.cancel();
@@ -174,6 +335,7 @@ class _ContactsPageState extends State<ContactsPage> {
     setState(() {
       _keyword = '';
       _projectId = 0;
+      _tagIds.clear();
     });
     _resetAndLoad();
   }
@@ -189,20 +351,78 @@ class _ContactsPageState extends State<ContactsPage> {
     });
   }
 
+  /// 标签筛选行: 与勾选弹层同款样式(tag_picker 的 _buildTagOption 为库私有, 这里自备一份)
+  Widget _buildFilterTagOption(
+    Tag tag,
+    bool checked,
+    ValueChanged<bool> onChanged,
+  ) {
+    final color = tagColor(tag);
+    return InkWell(
+      onTap: () => onChanged(!checked),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(
+              checked ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 20,
+              color: checked ? color : AppColors.textMute,
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                tag.name,
+                style: const TextStyle(fontSize: 13.5, color: AppColors.text),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 打开该联系人的标签勾选弹层: 客服与管理员都能勾选, 仅管理员可管理标签。
+  /// 保存成功后就地更新列表里的标签 chips。
+  Future<void> _openTagPicker(Contact c) async {
+    final state = context.read<AppState>();
+    await showTagPickerSheet(
+      context,
+      api: state.api,
+      userId: c.id,
+      assigned: c.tags,
+      canManage: state.admin?.isAdmin ?? false,
+      onSaved: (result) => _applyUpdate(c.copyWith(tags: result)),
+    );
+  }
+
   /// 打开该联系人的会话：按 user_id 查最新一条，直接进聊天页（与管理端「打开会话」同跳转）
   Future<void> _openConversation(Contact c) async {
     final api = context.read<AppState>().api;
     final s = AppStrings.current;
     try {
-      final data = await api.get('/admin/conversation/list',
-          query: {'page': 1, 'pageSize': 1, 'user_id': c.id});
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final data = await api.get(
+        '/admin/conversation/list',
+        query: {'page': 1, 'pageSize': 1, 'user_id': c.id},
+      );
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       final raw = m['list'];
       final list = raw is List
           ? raw
-              .whereType<Map>()
-              .map((e) => Conversation.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map((e) => Conversation.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : const <Conversation>[];
       if (!mounted) return;
       if (list.isEmpty) {
@@ -242,31 +462,42 @@ class _ContactsPageState extends State<ContactsPage> {
               if (saving) return;
               setSheetState(() => saving = true);
               try {
-                await api.post('/admin/user/update', data: {
-                  'id': c.id,
-                  'account': accountCtrl.text.trim(),
-                  'name': nameCtrl.text.trim(),
-                  'phone': phoneCtrl.text.trim(),
-                  'email': emailCtrl.text.trim(),
-                  'remark': remarkCtrl.text.trim(),
-                });
-                _applyUpdate(c.copyWith(
-                  account: accountCtrl.text.trim(),
-                  name: nameCtrl.text.trim(),
-                  phone: phoneCtrl.text.trim(),
-                  email: emailCtrl.text.trim(),
-                  remark: remarkCtrl.text.trim(),
-                ));
+                await api.post(
+                  '/admin/user/update',
+                  data: {
+                    'id': c.id,
+                    'account': accountCtrl.text.trim(),
+                    'name': nameCtrl.text.trim(),
+                    'phone': phoneCtrl.text.trim(),
+                    'email': emailCtrl.text.trim(),
+                    'remark': remarkCtrl.text.trim(),
+                  },
+                );
+                _applyUpdate(
+                  c.copyWith(
+                    account: accountCtrl.text.trim(),
+                    name: nameCtrl.text.trim(),
+                    phone: phoneCtrl.text.trim(),
+                    email: emailCtrl.text.trim(),
+                    remark: remarkCtrl.text.trim(),
+                  ),
+                );
                 if (ctx.mounted) Navigator.pop(ctx);
-                showSnack(context, s.contactSaved);
+                // 用弹层自身的 ctx 而不是 State.context: 跨 await 后后者可能已卸载
+                if (mounted) showSnack(context, s.contactSaved);
               } catch (e) {
                 setSheetState(() => saving = false);
                 if (ctx.mounted) showSnack(ctx, e.toString(), error: true);
               }
             }
 
-            Widget field(String label, TextEditingController ctrl,
-                {bool enabled = true, TextInputType? keyboard, int maxLines = 1}) {
+            Widget field(
+              String label,
+              TextEditingController ctrl, {
+              bool enabled = true,
+              TextInputType? keyboard,
+              int maxLines = 1,
+            }) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: TextField(
@@ -277,7 +508,10 @@ class _ContactsPageState extends State<ContactsPage> {
                   decoration: InputDecoration(
                     labelText: label,
                     isDense: true,
-                    labelStyle: const TextStyle(fontSize: 12, color: AppColors.textMute),
+                    labelStyle: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMute,
+                    ),
                   ),
                   style: const TextStyle(fontSize: 13),
                 ),
@@ -285,7 +519,12 @@ class _ContactsPageState extends State<ContactsPage> {
             }
 
             return Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                MediaQuery.of(ctx).viewInsets.bottom + 16,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -293,18 +532,33 @@ class _ContactsPageState extends State<ContactsPage> {
                   Center(
                     child: Text(
                       s.editContact,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
                   SingleChildScrollView(
                     child: Column(
                       children: [
-                        field(s.userExternalId, TextEditingController(text: c.externalUserId), enabled: false),
+                        field(
+                          s.userExternalId,
+                          TextEditingController(text: c.externalUserId),
+                          enabled: false,
+                        ),
                         field(s.userAccount, accountCtrl),
                         field(s.userName, nameCtrl),
-                        field(s.userPhone, phoneCtrl, keyboard: TextInputType.phone),
-                        field(s.userEmail, emailCtrl, keyboard: TextInputType.emailAddress),
+                        field(
+                          s.userPhone,
+                          phoneCtrl,
+                          keyboard: TextInputType.phone,
+                        ),
+                        field(
+                          s.userEmail,
+                          emailCtrl,
+                          keyboard: TextInputType.emailAddress,
+                        ),
                         field(s.userRemark, remarkCtrl, maxLines: 3),
                       ],
                     ),
@@ -373,7 +627,11 @@ class _ContactsPageState extends State<ContactsPage> {
                     width: 96,
                     child: Text(
                       label,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textMute, height: 1.5),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMute,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                   Expanded(
@@ -383,7 +641,9 @@ class _ContactsPageState extends State<ContactsPage> {
                         fontSize: 12.5,
                         height: 1.5,
                         color: empty ? AppColors.textMute : AppColors.text,
-                        decoration: copyable && !empty ? TextDecoration.underline : null,
+                        decoration: copyable && !empty
+                            ? TextDecoration.underline
+                            : null,
                         decorationStyle: TextDecorationStyle.dotted,
                         decorationColor: AppColors.textMute,
                       ),
@@ -422,7 +682,10 @@ class _ContactsPageState extends State<ContactsPage> {
                         c.displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     _statusPill(c.status == 1),
@@ -435,8 +698,55 @@ class _ContactsPageState extends State<ContactsPage> {
                 row(s.userEmail, c.email),
                 row(s.userExternalId, c.externalUserId),
                 row(s.userProject, c.projects),
+                // 访问平台: 服务端按访客打开 H5 时的 User-Agent 识别, 只读展示
+                row(
+                  s.platformLabel,
+                  s.platformText(c.platform),
+                  copyable: false,
+                ),
                 row(s.userRegTime, fmtDateTime(c.createTime), copyable: false),
                 row(s.userRemark, c.remark),
+                const SizedBox(height: 6),
+                // 标签展示 + 入口(客服/管理员均可勾选, 仅管理员可管理标签)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: Text(
+                        s.tags,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMute,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: c.tags.isEmpty
+                          ? const Text(
+                              '-',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.textMute,
+                              ),
+                            )
+                          : TagChips(tags: c.tags),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(sheetCtx);
+                      _openTagPicker(c);
+                    },
+                    icon: const Icon(Icons.label_outline, size: 18),
+                    label: Text(s.setTags),
+                  ),
+                ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -480,7 +790,9 @@ class _ContactsPageState extends State<ContactsPage> {
         border: Border.all(color: color.withOpacity(0.35)),
       ),
       child: Text(
-        enabled ? AppStrings.current.contactEnabled : AppStrings.current.contactDisabled,
+        enabled
+            ? AppStrings.current.contactEnabled
+            : AppStrings.current.contactDisabled,
         style: TextStyle(fontSize: 10, height: 1.2, color: color),
       ),
     );
@@ -489,7 +801,8 @@ class _ContactsPageState extends State<ContactsPage> {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
-    final hasFilter = _keyword.isNotEmpty || _projectId > 0;
+    final hasFilter =
+        _keyword.isNotEmpty || _projectId > 0 || _tagIds.isNotEmpty;
     return Column(
       children: [
         Padding(
@@ -500,12 +813,18 @@ class _ContactsPageState extends State<ContactsPage> {
                 children: [
                   Text(
                     s.tabContacts,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     s.totalCount('$_total'),
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMute),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMute,
+                    ),
                   ),
                   const Spacer(),
                   if (hasFilter)
@@ -516,7 +835,10 @@ class _ContactsPageState extends State<ContactsPage> {
                         minimumSize: const Size(40, 28),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: Text(s.resetFilters, style: const TextStyle(fontSize: 11)),
+                      child: Text(
+                        s.resetFilters,
+                        style: const TextStyle(fontSize: 11),
+                      ),
                     ),
                 ],
               ),
@@ -529,7 +851,11 @@ class _ContactsPageState extends State<ContactsPage> {
                 decoration: InputDecoration(
                   hintText: s.contactsSearchHint,
                   isDense: true,
-                  prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMute),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 18,
+                    color: AppColors.textMute,
+                  ),
                   suffixIcon: _searchCtrl.text.isEmpty
                       ? null
                       : IconButton(
@@ -538,7 +864,11 @@ class _ContactsPageState extends State<ContactsPage> {
                             _searchCtrl.clear();
                             _submitSearch('');
                           },
-                          icon: const Icon(Icons.close, size: 16, color: AppColors.textMute),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: AppColors.textMute,
+                          ),
                         ),
                 ),
               ),
@@ -546,19 +876,8 @@ class _ContactsPageState extends State<ContactsPage> {
               Row(
                 children: [
                   _buildProjectFilter(),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      s.contactsSyncTip,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        color: AppColors.textMute,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(width: 8),
+                  _buildTagFilter(),
                 ],
               ),
             ],
@@ -587,7 +906,9 @@ class _ContactsPageState extends State<ContactsPage> {
       onSelected: _setProject,
       itemBuilder: (context) => <PopupMenuEntry<int>>[
         PopupMenuItem<int>(value: 0, child: Text(s.allProjects)),
-        ..._projects.map((p) => PopupMenuItem<int>(value: p.id, child: Text(p.name))),
+        ..._projects.map(
+          (p) => PopupMenuItem<int>(value: p.id, child: Text(p.name)),
+        ),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -595,7 +916,9 @@ class _ContactsPageState extends State<ContactsPage> {
           color: active ? AppColors.accent.withOpacity(0.14) : AppColors.panel2,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? AppColors.accent.withOpacity(0.55) : AppColors.border,
+            color: active
+                ? AppColors.accent.withOpacity(0.55)
+                : AppColors.border,
           ),
         ),
         child: Row(
@@ -612,6 +935,50 @@ class _ContactsPageState extends State<ContactsPage> {
                   height: 1.2,
                   color: active ? AppColors.accentStrong : AppColors.textDim,
                 ),
+              ),
+            ),
+            const SizedBox(width: 2),
+            const Icon(Icons.expand_more, size: 14, color: AppColors.textMute),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 标签筛选胶囊: 与项目筛选同款样式, 选中后显示「标签·N」
+  Widget _buildTagFilter() {
+    final s = AppStrings.current;
+    final active = _tagIds.isNotEmpty;
+    final label = active ? s.tagFilterCount('${_tagIds.length}') : s.tagFilter;
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: _openTagFilter,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? AppColors.accent.withOpacity(0.14) : AppColors.panel2,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: active
+                ? AppColors.accent.withOpacity(0.55)
+                : AppColors.border,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.label_outline,
+              size: 14,
+              color: active ? AppColors.accentStrong : AppColors.textMute,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.2,
+                color: active ? AppColors.accentStrong : AppColors.textDim,
               ),
             ),
             const SizedBox(width: 2),
@@ -716,8 +1083,8 @@ class _ContactsPageState extends State<ContactsPage> {
     final sub = c.phone.isNotEmpty
         ? c.phone
         : (c.email.isNotEmpty
-            ? c.email
-            : (c.account.isNotEmpty ? c.account : c.externalUserId));
+              ? c.email
+              : (c.account.isNotEmpty ? c.account : c.externalUserId));
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -743,7 +1110,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         Expanded(
                           child: Text(
                             c.displayName,
-                            textAlign: TextAlign.end,
+                            textAlign: TextAlign.start,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -756,7 +1123,10 @@ class _ContactsPageState extends State<ContactsPage> {
                         const SizedBox(width: 8),
                         Text(
                           fmtTimeShort(c.createTime),
-                          style: const TextStyle(fontSize: 10, color: AppColors.textMute),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMute,
+                          ),
                         ),
                       ],
                     ),
@@ -768,21 +1138,36 @@ class _ContactsPageState extends State<ContactsPage> {
                             sub.isEmpty ? '-' : sub,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 11.5, color: AppColors.textDim),
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.textDim,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
+                        // 项目名作为非 flex 的尾部元素: 自然贴右, 邮箱(Expanded)拿到除它之外的全部宽度,
+                        // 避免与项目名平分空间而把邮箱挤到加省略号; maxWidth 仅防极长时溢出
                         if (c.projects.isNotEmpty)
-                          Flexible(
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width * 0.5,
+                            ),
                             child: Text(
                               c.projects,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                color: AppColors.textMute,
+                              ),
                             ),
                           ),
                       ],
                     ),
+                    if (c.tags.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      TagChips(tags: c.tags, dense: true),
+                    ],
                   ],
                 ),
               ),

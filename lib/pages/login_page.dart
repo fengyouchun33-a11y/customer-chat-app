@@ -57,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  static const String _registerUrl = 'https://support.breathmeters.net/';
+  static const String _registerUrl = 'https://reflexassist.com';
 
   /// 平台介绍：底部弹层，纯展示
   void _showIntro() {
@@ -80,13 +80,18 @@ class _LoginPageState extends State<LoginPage> {
                 Text(
                   s.loginIntroEntry,
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   s.introBody,
                   style: const TextStyle(
-                      fontSize: 13, height: 1.8, color: AppColors.textMute),
+                    fontSize: 13,
+                    height: 1.8,
+                    color: AppColors.textMute,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -136,20 +141,46 @@ class _LoginPageState extends State<LoginPage> {
             Text(
               s.registerBody,
               style: const TextStyle(
-                  fontSize: 13, height: 1.8, color: AppColors.textMute),
+                fontSize: 13,
+                height: 1.8,
+                color: AppColors.textMute,
+              ),
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const SelectableText(
-                _registerUrl,
-                style: TextStyle(fontSize: 12.5, color: AppColors.accentStrong),
+            // 点击即复制：轻击链接直接复制 URL（等同于下方“复制链接”）
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => Navigator.of(dialogContext).pop(true),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.bg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _registerUrl,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.accentStrong,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(
+                      Icons.copy_rounded,
+                      size: 16,
+                      color: AppColors.accentStrong,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -215,7 +246,9 @@ class _LoginPageState extends State<LoginPage> {
                                 Text(
                                   s.loginSubtitle,
                                   style: const TextStyle(
-                                      fontSize: 12, color: AppColors.textMute),
+                                    fontSize: 12,
+                                    color: AppColors.textMute,
+                                  ),
                                 ),
                               ],
                             ),
@@ -223,8 +256,11 @@ class _LoginPageState extends State<LoginPage> {
                           IconButton(
                             tooltip: s.language,
                             onPressed: () => showLanguagePicker(context),
-                            icon: const Icon(Icons.language,
-                                size: 20, color: AppColors.textMute),
+                            icon: const Icon(
+                              Icons.language,
+                              size: 20,
+                              color: AppColors.textMute,
+                            ),
                           ),
                         ],
                       ),
@@ -247,8 +283,11 @@ class _LoginPageState extends State<LoginPage> {
                               onSubmitted: (_) => _pwdFocus.requestFocus(),
                               decoration: InputDecoration(
                                 hintText: s.account,
-                                prefixIcon: const Icon(Icons.person_outline,
-                                    size: 18, color: AppColors.textMute),
+                                prefixIcon: const Icon(
+                                  Icons.person_outline,
+                                  size: 18,
+                                  color: AppColors.textMute,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -260,8 +299,11 @@ class _LoginPageState extends State<LoginPage> {
                               onSubmitted: (_) => _submit(),
                               decoration: InputDecoration(
                                 hintText: s.password,
-                                prefixIcon: const Icon(Icons.lock_outline,
-                                    size: 18, color: AppColors.textMute),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline,
+                                  size: 18,
+                                  color: AppColors.textMute,
+                                ),
                                 suffixIcon: IconButton(
                                   tooltip: _obscure
                                       ? s.showPassword
@@ -282,19 +324,24 @@ class _LoginPageState extends State<LoginPage> {
                               const SizedBox(height: 12),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 8),
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.danger.withOpacity(0.10),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                      color:
-                                          AppColors.danger.withOpacity(0.35)),
+                                    color: AppColors.danger.withOpacity(0.35),
+                                  ),
                                 ),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.error_outline,
-                                        size: 15, color: AppColors.danger),
+                                    const Icon(
+                                      Icons.error_outline,
+                                      size: 15,
+                                      color: AppColors.danger,
+                                    ),
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
@@ -341,33 +388,50 @@ class _LoginPageState extends State<LoginPage> {
                             style: TextButton.styleFrom(
                               minimumSize: const Size(0, 36),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            icon: const Icon(Icons.info_outline,
-                                size: 15, color: AppColors.textMute),
+                            icon: const Icon(
+                              Icons.info_outline,
+                              size: 15,
+                              color: AppColors.textMute,
+                            ),
                             label: Text(
                               s.loginIntroEntry,
                               style: const TextStyle(
-                                  fontSize: 12, color: AppColors.textMute),
+                                fontSize: 12,
+                                color: AppColors.textMute,
+                              ),
                             ),
                           ),
                           Container(
-                              width: 1, height: 12, color: AppColors.border),
+                            width: 1,
+                            height: 12,
+                            color: AppColors.border,
+                          ),
                           TextButton.icon(
                             onPressed: _showRegister,
                             style: TextButton.styleFrom(
                               minimumSize: const Size(0, 36),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            icon: const Icon(Icons.business_outlined,
-                                size: 15, color: AppColors.accentStrong),
+                            icon: const Icon(
+                              Icons.business_outlined,
+                              size: 15,
+                              color: AppColors.accentStrong,
+                            ),
                             label: Text(
                               s.loginRegisterEntry,
                               style: const TextStyle(
-                                  fontSize: 12, color: AppColors.accentStrong),
+                                fontSize: 12,
+                                color: AppColors.accentStrong,
+                              ),
                             ),
                           ),
                         ],
@@ -401,15 +465,17 @@ class _AppVersionLabelState extends State<AppVersionLabel> {
   @override
   void initState() {
     super.initState();
-    PackageInfo.fromPlatform().then((info) {
-      if (!mounted) return;
-      setState(() {
-        final build = info.buildNumber;
-        _text = build.isEmpty ? info.version : '${info.version} ($build)';
-      });
-    }).catchError((_) {
-      // 异常环境下读不到包信息就不显示，不影响登录
-    });
+    PackageInfo.fromPlatform()
+        .then((info) {
+          if (!mounted) return;
+          setState(() {
+            final build = info.buildNumber;
+            _text = build.isEmpty ? info.version : '${info.version} ($build)';
+          });
+        })
+        .catchError((_) {
+          // 异常环境下读不到包信息就不显示，不影响登录
+        });
   }
 
   @override

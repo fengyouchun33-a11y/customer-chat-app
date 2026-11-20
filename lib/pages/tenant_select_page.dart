@@ -67,7 +67,9 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
     final kw = _keyword.trim().toLowerCase();
     if (kw.isEmpty) return _tenants;
     return _tenants
-        .where((t) => t.companyName.toLowerCase().contains(kw) || '${t.id}' == kw)
+        .where(
+          (t) => t.companyName.toLowerCase().contains(kw) || '${t.id}' == kw,
+        )
         .toList();
   }
 
@@ -99,8 +101,14 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
         title: Text(s.logout),
         content: Text(s.logoutConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.logoutAction)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(s.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(s.logoutAction),
+          ),
         ],
       ),
     );
@@ -116,12 +124,19 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !widget.mandatory,
-        title: Text(s.selectTenantTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text(
+          s.selectTenantTitle,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
         actions: [
           IconButton(
             tooltip: s.language,
             onPressed: () => showLanguagePicker(context),
-            icon: const Icon(Icons.language, size: 20, color: AppColors.textDim),
+            icon: const Icon(
+              Icons.language,
+              size: 20,
+              color: AppColors.textDim,
+            ),
           ),
           IconButton(
             tooltip: s.logout,
@@ -142,7 +157,11 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
                   onChanged: (v) => setState(() => _keyword = v),
                   decoration: InputDecoration(
                     hintText: s.searchTenantHint,
-                    prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMute),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 18,
+                      color: AppColors.textMute,
+                    ),
                     isDense: true,
                   ),
                 ),
@@ -166,20 +185,33 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.admin_panel_settings_outlined, color: AppColors.signal, size: 22),
+          const Icon(
+            Icons.admin_panel_settings_outlined,
+            color: AppColors.signal,
+            size: 22,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppStrings.current.platformAdmin(state.admin?.displayName ?? ''),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  AppStrings.current.platformAdmin(
+                    state.admin?.displayName ?? '',
+                  ),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   AppStrings.current.tenantSelectHint,
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.textMute, height: 1.5),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.textMute,
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
@@ -252,7 +284,10 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
               child: Text(
                 AppStrings.current.tenantSwitchHint,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: AppColors.textMute,
+                ),
               ),
             );
           }
@@ -279,7 +314,9 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
             color: AppColors.panel,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: current ? AppColors.accent.withOpacity(0.55) : AppColors.border,
+              color: current
+                  ? AppColors.accent.withOpacity(0.55)
+                  : AppColors.border,
             ),
           ),
           child: Row(
@@ -292,7 +329,11 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
                   color: AppColors.panel2,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.business_outlined, size: 18, color: AppColors.accent),
+                child: const Icon(
+                  Icons.business_outlined,
+                  size: 18,
+                  color: AppColors.accent,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -303,18 +344,22 @@ class _TenantSelectPageState extends State<TenantSelectPage> {
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      current
-                          ? AppStrings.current.currentTenant
-                          : AppStrings.current.tenantIdLabel('${t.id}'),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: current ? AppColors.accent : AppColors.textMute,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
+                    // 只标记当前租户, 不再展示租户 id
+                    if (current) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        AppStrings.current.currentTenant,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -19,6 +19,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
+import '../widgets/tag_picker.dart';
 
 /// 沟通页：与管理端右栏同逻辑
 /// - 进入即拉消息（服务端顺带清零管理员未读）
@@ -48,6 +49,10 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _replyCtrl = TextEditingController();
   final FocusNode _replyFocus = FocusNode();
   final ScrollController _scrollCtrl = ScrollController();
+  // 吸底: 停留在底部附近时, 异步内容(网络图片下载完成撑高列表)会补跳回真正的底部
+  bool _stickBottom = false;
+  // 上一次看到的内容高度: 只在 maxScrollExtent 真的变化时补跳, 不跟用户手势打架
+  double _lastMaxExtent = 0;
   final Map<int, bool> _showOriginal = {};
   final ImagePicker _picker = ImagePicker();
   // 已选但还没发送的图片：发送时与文字拼成同一条消息（与 H5 发图口径一致）
@@ -62,7 +67,14 @@ class _ChatPageState extends State<ChatPage> {
   bool _transStale = false; // 预览后原文又被改动，译文待更新
   String _transLang = ''; // 目标语言码（服务端按会话访客语言返回）
   int _transSeq = 0; // 防并发覆盖：只认最后一次预览的结果
-  bool _attachOpen = false; // 微信式「+」扩展面板（图片上传 / 翻译预览）
+  bool _attachOpen = false; // 微信式「+」扩展面板（图片上传 / 翻译预览 / 邀请评价）
+
+  // 会话所属项目的市场地址（后台选填）：非 APP 项目或未配置则不展示邀请评价入口
+  int _projectType = 1;
+  String _googlePlayUrl = '';
+  String _appStoreUrl = '';
+  // 访客访问平台（服务端按 H5 UA 识别，messages 接口附带）：邀请评价据此只发一条链接
+  String _visitorPlatform = '';
 
   List<ChatMessage> _messages = const [];
   bool _loading = true;
@@ -82,23 +94,50 @@ class _ChatPageState extends State<ChatPage> {
   // 用户档案（查看用户信息用）：仅开放接口创建的会话(userId>0)可查，与 Web 管理端口径一致
   UserDetail? _userDetail;
   bool _userLoading = false;
+  // 会话访客的标签（/admin/conversation/messages 附带 visitor_tags）：仅 userId>0 可打
+  List<Tag> _visitorTags = const [];
 
   static final MarkdownStyleSheet _mdStyle = MarkdownStyleSheet(
     p: const TextStyle(fontSize: 13.5, height: 1.55, color: AppColors.text),
-    h1: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.text, height: 1.4),
-    h2: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text, height: 1.4),
-    h3: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: AppColors.text, height: 1.4),
+    h1: const TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.w700,
+      color: AppColors.text,
+      height: 1.4,
+    ),
+    h2: const TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w700,
+      color: AppColors.text,
+      height: 1.4,
+    ),
+    h3: const TextStyle(
+      fontSize: 14.5,
+      fontWeight: FontWeight.w600,
+      color: AppColors.text,
+      height: 1.4,
+    ),
     em: const TextStyle(fontStyle: FontStyle.italic, color: AppColors.text),
     strong: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.text),
-    del: const TextStyle(decoration: TextDecoration.lineThrough, color: AppColors.textDim),
-    a: const TextStyle(color: AppColors.accent, decoration: TextDecoration.underline),
+    del: const TextStyle(
+      decoration: TextDecoration.lineThrough,
+      color: AppColors.textDim,
+    ),
+    a: const TextStyle(
+      color: AppColors.accent,
+      decoration: TextDecoration.underline,
+    ),
     code: const TextStyle(
       fontSize: 12,
       color: AppColors.accentStrong,
       backgroundColor: Color(0xFF0A1A23),
       fontFamily: 'monospace',
     ),
-    blockquote: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textDim),
+    blockquote: const TextStyle(
+      fontSize: 13,
+      height: 1.5,
+      color: AppColors.textDim,
+    ),
     blockquoteDecoration: const BoxDecoration(
       color: AppColors.panel2,
       border: Border(left: BorderSide(color: AppColors.accent, width: 2)),
@@ -110,7 +149,11 @@ class _ChatPageState extends State<ChatPage> {
     ),
     listBullet: const TextStyle(fontSize: 13, color: AppColors.text),
     tableBorder: TableBorder.all(color: AppColors.border, width: 1),
-    tableHead: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text),
+    tableHead: const TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: AppColors.text,
+    ),
     tableBody: const TextStyle(fontSize: 12, color: AppColors.textDim),
   );
 
@@ -128,6 +171,7 @@ class _ChatPageState extends State<ChatPage> {
     _scrollCtrl.addListener(_onScroll);
     _replyCtrl.addListener(_onReplyChanged);
     _loadMessages(initial: true);
+    _loadAppLinks();
     _poll = Timer.periodic(AppConfig.chatPollInterval, (_) => _pollTick());
   }
 
@@ -166,7 +210,139 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _truthy(dynamic v) => v == true || v == 1;
 
-  Future<void> _loadMessages({bool initial = false, bool silent = false, bool follow = false}) async {
+  /// 读会话所属项目的市场地址：失败静默，只是少一个评价入口
+  Future<void> _loadAppLinks() async {
+    if (_conv.projectId <= 0) return;
+    try {
+      final data = await _app.api.get(
+        '/admin/project/app-links',
+        query: {'project_id': '${_conv.projectId}'},
+      );
+      if (data is! Map || !mounted) return;
+      setState(() {
+        _projectType = asInt(data['project_type'], 1);
+        _googlePlayUrl = asString(data['google_play_url']);
+        _appStoreUrl = asString(data['app_store_url']);
+      });
+    } catch (_) {}
+  }
+
+  /// 邀请评价：按访客平台拼好卡片后弹窗预览确认，确认即直发，不再填充输入框；
+  /// 只发一条链接(android→Google Play / ios→App Store)；对应市场未配置则
+  /// modal 提示配置路径；平台未知时配了哪个发哪个，双配发双链接，全未配置同样提示
+  void _insertReviewCard() {
+    setState(() => _attachOpen = false);
+    final s = AppStrings.current;
+    final plat = _visitorPlatform.toLowerCase();
+    String? url;
+    String? single;
+    if (plat == 'android') {
+      url = _googlePlayUrl.isNotEmpty ? _googlePlayUrl : null;
+      single = s.reviewInvitePlay;
+    } else if (plat == 'ios') {
+      url = _appStoreUrl.isNotEmpty ? _appStoreUrl : null;
+      single = s.reviewInviteAppStore;
+    } else {
+      // 平台未知/桌面/harmony: 只发已配置的；只配一个就发那一个，
+      // 都配了发双链接由访客自选；全没配→提示，商店名取先配置的一项
+      if (_googlePlayUrl.isNotEmpty && _appStoreUrl.isEmpty) {
+        url = _googlePlayUrl;
+        single = s.reviewInvitePlay;
+      } else if (_appStoreUrl.isNotEmpty && _googlePlayUrl.isEmpty) {
+        url = _appStoreUrl;
+        single = s.reviewInviteAppStore;
+      } else if (_googlePlayUrl.isEmpty && _appStoreUrl.isEmpty) {
+        _showReviewLinkNotConfigured(s.reviewInvitePlay);
+        return;
+      }
+    }
+    if (url != null) {
+      _confirmSendReviewCard('> ⭐ **${s.reviewInviteIntro}**\n> \n> [${s.reviewInviteGo}]($url)');
+      return;
+    }
+    // 访客平台明确(android/ios)但对应市场没配: 点名提示该商店
+    if (single != null) {
+      _showReviewLinkNotConfigured(single);
+      return;
+    }
+    final links = [
+      if (_googlePlayUrl.isNotEmpty) '[${s.reviewInvitePlay}]($_googlePlayUrl)',
+      if (_appStoreUrl.isNotEmpty) '[${s.reviewInviteAppStore}]($_appStoreUrl)',
+    ];
+    _confirmSendReviewCard('> ⭐ **${s.reviewInviteIntro}**\n> \n> ${links.join('\n')}');
+  }
+
+  /// 发送前预览确认：气泡同款 MarkdownBody 渲染卡片，确认后直接发送
+  Future<void> _confirmSendReviewCard(String card) async {
+    final s = AppStrings.current;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(s.reviewInviteSendTitle),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: MarkdownBody(data: card, styleSheet: _mdStyle),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(s.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(s.reviewInviteSendBtn),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await _sendReviewCard(card);
+  }
+
+  /// 评价卡片单独成条直发：不碰输入框草稿，也不参与翻译面板
+  Future<void> _sendReviewCard(String card) async {
+    if (_sending) return;
+    final api = context.read<AppState>().api;
+    setState(() => _sending = true);
+    try {
+      await api.post(
+        '/admin/conversation/reply',
+        data: {'conv_key': _conv.convKey, 'content': card},
+      );
+      await _loadMessages(silent: true, follow: true);
+    } catch (e) {
+      if (mounted) {
+        showSnack(context, e is ApiException ? e.message : e.toString(),
+            error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// 市场链接未配置: 告知管理员去 Web 后台「项目管理」里配哪个商店
+  void _showReviewLinkNotConfigured(String store) {
+    final s = AppStrings.current;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(s.reviewLinkNotConfigured(store)),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(s.confirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadMessages({
+    bool initial = false,
+    bool silent = false,
+    bool follow = false,
+  }) async {
     final api = context.read<AppState>().api;
     final seq = ++_msgSeq;
     try {
@@ -175,13 +351,15 @@ class _ChatPageState extends State<ChatPage> {
         query: {'conv_key': _conv.convKey, 'limit': _pageSize},
       );
       if (!mounted || seq != _msgSeq) return;
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       final raw = m['list'];
       final page = raw is List
           ? raw
-              .whereType<Map>()
-              .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : <ChatMessage>[];
       // 已翻到的更早历史留在前缀里：最近一页只含最新 limit 条，直接覆盖会把用户正在看的
       // 上半段冲掉；只保留 id 小于本页最早 id 的，重叠部分由本页覆盖
@@ -209,8 +387,21 @@ class _ChatPageState extends State<ChatPage> {
             agentId: asInt(conv['agent_id'], _conv.agentId),
           );
         }
+        // 附带访客标签: 服务端无此字段时保留上一次结果(例如轮询早期版本)
+        final tagRaw = m['visitor_tags'];
+        if (tagRaw is List) {
+          _visitorTags = tagRaw
+              .whereType<Map>()
+              .map((e) => Tag.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        }
+        // 访客平台: 老服务端无此字段时置空, 邀请评价自动回退双链接
+        _visitorPlatform = asTrimString(m['visitor_platform']);
       });
-      if (stick) _scrollToBottom();
+      if (stick) {
+        _stickBottom = true;
+        _scrollToBottom();
+      }
     } catch (e) {
       if (!mounted || seq != _msgSeq) return;
       setState(() {
@@ -270,13 +461,15 @@ class _ChatPageState extends State<ChatPage> {
           'before_id': _oldestLoadedId,
         },
       );
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       final raw = m['list'];
       final page = raw is List
           ? raw
-              .whereType<Map>()
-              .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : <ChatMessage>[];
       if (!mounted) return;
       final exists = _messages.map((e) => e.id).toSet();
@@ -308,7 +501,10 @@ class _ChatPageState extends State<ChatPage> {
       var retry = false;
       if (_scrollCtrl.hasClients && _scrollCtrl.position.hasContentDimensions) {
         final pos = _scrollCtrl.position;
-        final target = (pos.maxScrollExtent - distance).clamp(0.0, pos.maxScrollExtent);
+        final target = (pos.maxScrollExtent - distance).clamp(
+          0.0,
+          pos.maxScrollExtent,
+        );
         if ((target - pos.pixels).abs() > 0.5) {
           pos.jumpTo(target);
           retry = true;
@@ -356,13 +552,33 @@ class _ChatPageState extends State<ChatPage> {
 
   void _onScroll() {
     if (_newCount > 0 && _nearBottom) setState(() => _newCount = 0);
+    // 用户贴底保持吸底, 往上翻则解除; 滚动位置变化不改变用户意图, 只跟着实际位置走
+    _stickBottom = _nearBottom;
     // 接近顶部就预取更早的一页，不等用户真的划到头
-    if (_scrollCtrl.hasClients && _scrollCtrl.position.pixels < 60) _loadOlder();
+    if (_scrollCtrl.hasClients && _scrollCtrl.position.pixels < 60)
+      _loadOlder();
+  }
+
+  /// 图片等异步内容撑高列表后, 在吸底状态下补跳到底部
+  /// (_scrollToBottom 只重试 10 帧, 盖不住几百毫秒后才落地的网络图)
+  bool _onMetricsNotification(ScrollMetricsNotification n) {
+    // 纯滑动的 metrics 变化(高度没变)不响应, 免得拖拽第一帧被 jumpTo 抓回底部
+    final extent = n.metrics.maxScrollExtent;
+    final resized = (extent - _lastMaxExtent).abs() > 0.5;
+    _lastMaxExtent = extent;
+    if (!resized || !_stickBottom) return false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_stickBottom || !_scrollCtrl.hasClients) return;
+      final pos = _scrollCtrl.position;
+      if (pos.maxScrollExtent - pos.pixels > 0.5) pos.jumpTo(pos.maxScrollExtent);
+    });
+    return false; // 不拦截, 继续冒泡
   }
 
   /// 回到底部最新消息：双击标题 / 点「N 条新消息」共用
   void _jumpToLatest() {
     setState(() => _newCount = 0);
+    _stickBottom = true;
     // 先贴底给即时反馈，再拉一次最新消息（新消息撑高后会由 _scrollToBottom 继续补跳）
     _scrollToBottom();
     _loadMessages(silent: true, follow: true);
@@ -419,16 +635,19 @@ class _ChatPageState extends State<ChatPage> {
     final seq = ++_transSeq;
     setState(() => _transLoading = true);
     try {
-      final data = await api.post('/admin/conversation/translatePreview', data: {
-        'conv_key': _conv.convKey,
-        'content': text,
-      });
+      final data = await api.post(
+        '/admin/conversation/translatePreview',
+        data: {'conv_key': _conv.convKey, 'content': text},
+      );
       if (!mounted || seq != _transSeq) return;
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       setState(() {
         _transCtrl.text = asString(m['translated_content']);
-        _transCtrl.selection =
-            TextSelection.collapsed(offset: _transCtrl.text.length);
+        _transCtrl.selection = TextSelection.collapsed(
+          offset: _transCtrl.text.length,
+        );
         _transLang = asString(m['translated_lang']);
         _transSame = m['same'] == true;
         _transStale = false;
@@ -453,13 +672,17 @@ class _ChatPageState extends State<ChatPage> {
       // 面板展开且译文已确认（非过期）：把客服编辑过的译文一起下发，服务端不再重复翻译
       final translatedText = _transCtrl.text.trim();
       final useManualTranslation =
-          _transOpen && text.isNotEmpty && translatedText.isNotEmpty && !_transStale;
+          _transOpen &&
+          text.isNotEmpty &&
+          translatedText.isNotEmpty &&
+          !_transStale;
       final data = <String, dynamic>{
         'conv_key': _conv.convKey,
         if (text.isNotEmpty) 'content': text,
         if (urls.isNotEmpty) 'images': urls,
         if (useManualTranslation) 'translated_content': translatedText,
-        if (useManualTranslation && _transLang.isNotEmpty) 'translated_lang': _transLang,
+        if (useManualTranslation && _transLang.isNotEmpty)
+          'translated_lang': _transLang,
       };
       await api.post('/admin/conversation/reply', data: data);
       _replyCtrl.clear();
@@ -481,10 +704,15 @@ class _ChatPageState extends State<ChatPage> {
     if (_pendingImages.isEmpty) return const [];
     final form = FormData();
     for (final f in _pendingImages) {
-      form.files.add(MapEntry(
-        'file[]',
-        await MultipartFile.fromFile(f.path, filename: f.name.isEmpty ? null : f.name),
-      ));
+      form.files.add(
+        MapEntry(
+          'file[]',
+          await MultipartFile.fromFile(
+            f.path,
+            filename: f.name.isEmpty ? null : f.name,
+          ),
+        ),
+      );
     }
     final data = await api.post('/admin/upload/image', data: form);
     final raw = data is Map ? data['urls'] : null;
@@ -507,7 +735,10 @@ class _ChatPageState extends State<ChatPage> {
     }
     try {
       // 压到 1920 宽 / 质量 85：服务端限单张 5MB，直传手机原图很容易超
-      final picked = await _picker.pickMultiImage(imageQuality: 85, maxWidth: 1920);
+      final picked = await _picker.pickMultiImage(
+        imageQuality: 85,
+        maxWidth: 1920,
+      );
       if (!mounted || picked.isEmpty) return;
       final accepted = <XFile>[];
       var tooLarge = 0;
@@ -520,10 +751,19 @@ class _ChatPageState extends State<ChatPage> {
       }
       if (accepted.isNotEmpty) setState(() => _pendingImages.addAll(accepted));
       if (tooLarge > 0 && mounted) {
-        showSnack(context, AppStrings.current.imagesTooLarge('$tooLarge'), error: true);
+        showSnack(
+          context,
+          AppStrings.current.imagesTooLarge('$tooLarge'),
+          error: true,
+        );
       }
     } catch (e) {
-      if (mounted) showSnack(context, AppStrings.current.pickImageFailed('$e'), error: true);
+      if (mounted)
+        showSnack(
+          context,
+          AppStrings.current.pickImageFailed('$e'),
+          error: true,
+        );
     }
   }
 
@@ -563,11 +803,18 @@ class _ChatPageState extends State<ChatPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.broken_image_outlined, size: 13, color: AppColors.textMute),
+                  const Icon(
+                    Icons.broken_image_outlined,
+                    size: 13,
+                    color: AppColors.textMute,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     AppStrings.current.imageLoadFailed,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMute),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMute,
+                    ),
                   ),
                 ],
               ),
@@ -621,8 +868,14 @@ class _ChatPageState extends State<ChatPage> {
           title: Text(s.closeConversation),
           content: Text(s.closeConversationBody),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.cancel)),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.close)),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(s.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(s.close),
+            ),
           ],
         ),
       );
@@ -639,7 +892,10 @@ class _ChatPageState extends State<ChatPage> {
       if (!mounted) return;
       setState(() => _conv = _conv.copyWith(status: closing ? 2 : 0));
       final s = AppStrings.current;
-      showSnack(context, closing ? s.conversationClosed : s.conversationReopened);
+      showSnack(
+        context,
+        closing ? s.conversationClosed : s.conversationReopened,
+      );
       await _loadMessages(silent: true);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
@@ -683,7 +939,9 @@ class _ChatPageState extends State<ChatPage> {
         '/admin/conversation/assign-candidates',
         query: {'conv_key': _conv.convKey},
       );
-      final m = data is Map ? Map<String, dynamic>.from(data) : const <String, dynamic>{};
+      final m = data is Map
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
       candidates = ((m['list'] as List?) ?? const [])
           .map((e) => Map<String, dynamic>.from(e as Map))
           .toList();
@@ -728,19 +986,32 @@ class _ChatPageState extends State<ChatPage> {
                     Text(
                       isReassign ? s.reassign : s.assign,
                       style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.text),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.text,
+                      ),
                     ),
                     const SizedBox(height: 6),
-                    Text(s.assignTip,
-                        style: const TextStyle(
-                            fontSize: 11.5, color: AppColors.textDim, height: 1.4)),
+                    Text(
+                      s.assignTip,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.textDim,
+                        height: 1.4,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     if (candidates.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Text(s.assignEmpty,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 12.5, color: AppColors.textMute)),
+                        child: Text(
+                          s.assignEmpty,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.textMute,
+                          ),
+                        ),
                       )
                     else
                       Flexible(
@@ -753,7 +1024,9 @@ class _ChatPageState extends State<ChatPage> {
                                   selected: pick == asInt(a['id']),
                                   onTap: a['current'] == true
                                       ? null
-                                      : () => setSheet(() => pick = asInt(a['id'])),
+                                      : () => setSheet(
+                                          () => pick = asInt(a['id']),
+                                        ),
                                 ),
                             ],
                           ),
@@ -764,7 +1037,9 @@ class _ChatPageState extends State<ChatPage> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: submitting ? null : () => Navigator.pop(sheetCtx),
+                            onPressed: submitting
+                                ? null
+                                : () => Navigator.pop(sheetCtx),
                             child: Text(s.cancel),
                           ),
                         ),
@@ -788,20 +1063,32 @@ class _ChatPageState extends State<ChatPage> {
                                           : const <String, dynamic>{};
                                       final name = asString(d['agent_name']);
                                       if (mounted) {
-                                        setState(() => _conv = _conv.copyWith(
-                                              agentId: asInt(d['agent_id']),
-                                              agentName: name,
-                                              status: d.containsKey('status')
-                                                  ? asInt(d['status'])
-                                                  : null));
+                                        setState(
+                                          () => _conv = _conv.copyWith(
+                                            agentId: asInt(d['agent_id']),
+                                            agentName: name,
+                                            status: d.containsKey('status')
+                                                ? asInt(d['status'])
+                                                : null,
+                                          ),
+                                        );
                                       }
-                                      if (sheetCtx.mounted) Navigator.pop(sheetCtx);
-                                      if (mounted) showSnack(context, s.assignDone(name));
-                                      await _loadMessages(silent: true, follow: true);
+                                      if (sheetCtx.mounted)
+                                        Navigator.pop(sheetCtx);
+                                      if (mounted)
+                                        showSnack(context, s.assignDone(name));
+                                      await _loadMessages(
+                                        silent: true,
+                                        follow: true,
+                                      );
                                     } catch (e) {
                                       if (sheetCtx.mounted) {
                                         setSheet(() => submitting = false);
-                                        showSnack(sheetCtx, e.toString(), error: true);
+                                        showSnack(
+                                          sheetCtx,
+                                          e.toString(),
+                                          error: true,
+                                        );
                                       }
                                     }
                                   },
@@ -809,7 +1096,10 @@ class _ChatPageState extends State<ChatPage> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2))
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
                                 : Text(s.confirm),
                           ),
                         ),
@@ -838,7 +1128,8 @@ class _ChatPageState extends State<ChatPage> {
         fbId = id;
         fb = id;
       }
-      if (a['online'] == true && (load < bestLoad || (load == bestLoad && id < bestId))) {
+      if (a['online'] == true &&
+          (load < bestLoad || (load == bestLoad && id < bestId))) {
         bestLoad = load;
         bestId = id;
         best = id;
@@ -865,10 +1156,14 @@ class _ChatPageState extends State<ChatPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? AppColors.accent.withOpacity(0.12) : Colors.transparent,
+            color: selected
+                ? AppColors.accent.withOpacity(0.12)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: selected ? AppColors.accent.withOpacity(0.4) : AppColors.border,
+              color: selected
+                  ? AppColors.accent.withOpacity(0.4)
+                  : AppColors.border,
             ),
           ),
           child: Row(
@@ -886,8 +1181,9 @@ class _ChatPageState extends State<ChatPage> {
                 child: Text(
                   asString(a['name']),
                   style: TextStyle(
-                      fontSize: 13,
-                      color: current ? AppColors.textMute : AppColors.text),
+                    fontSize: 13,
+                    color: current ? AppColors.textMute : AppColors.text,
+                  ),
                 ),
               ),
               if (current)
@@ -895,11 +1191,15 @@ class _ChatPageState extends State<ChatPage> {
               else if (!onDuty)
                 _assignBadge(s.assignOffDuty, AppColors.textMute),
               const SizedBox(width: 8),
-              Text(online ? s.online : s.offline,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textDim)),
+              Text(
+                online ? s.online : s.offline,
+                style: const TextStyle(fontSize: 11, color: AppColors.textDim),
+              ),
               const SizedBox(width: 8),
-              Text(s.agentLoad('$load'),
-                  style: const TextStyle(fontSize: 11, color: AppColors.textMute)),
+              Text(
+                s.agentLoad('$load'),
+                style: const TextStyle(fontSize: 11, color: AppColors.textMute),
+              ),
             ],
           ),
         ),
@@ -916,8 +1216,10 @@ class _ChatPageState extends State<ChatPage> {
           color: color.withOpacity(0.12),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(text,
-            style: TextStyle(fontSize: 9.5, color: color, height: 1.2)),
+        child: Text(
+          text,
+          style: TextStyle(fontSize: 9.5, color: color, height: 1.2),
+        ),
       ),
     );
   }
@@ -965,7 +1267,10 @@ class _ChatPageState extends State<ChatPage> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     AppStrings.current.historyForms('${forms.length}'),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -979,7 +1284,8 @@ class _ChatPageState extends State<ChatPage> {
                           controller: scrollCtrl,
                           padding: const EdgeInsets.all(14),
                           itemCount: forms.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
                           itemBuilder: (context, i) => _formDataCard(forms[i]),
                         ),
                 ),
@@ -1000,11 +1306,15 @@ class _ChatPageState extends State<ChatPage> {
       _userDetail = null;
     });
     try {
-      final data = await api.get('/admin/user/detail', query: {'id': _conv.userId});
+      final data = await api.get(
+        '/admin/user/detail',
+        query: {'id': _conv.userId},
+      );
       if (!mounted) return;
       setState(() {
-        _userDetail =
-            data is Map ? UserDetail.fromJson(Map<String, dynamic>.from(data)) : null;
+        _userDetail = data is Map
+            ? UserDetail.fromJson(Map<String, dynamic>.from(data))
+            : null;
         _userLoading = false;
       });
       _showUserInfoSheet();
@@ -1013,6 +1323,22 @@ class _ChatPageState extends State<ChatPage> {
       setState(() => _userLoading = false);
       showSnack(context, AppStrings.current.userInfoLoadFailed, error: true);
     }
+  }
+
+  /// 打开会话访客的标签勾选弹层：客服与管理员都能勾选，仅管理员可管理标签。
+  Future<void> _openTagPicker() async {
+    if (_conv.userId <= 0) return;
+    await showTagPickerSheet(
+      context,
+      api: _app.api,
+      userId: _conv.userId,
+      assigned: _visitorTags,
+      canManage: _app.admin?.isAdmin ?? false,
+      onSaved: (result) {
+        if (!mounted) return;
+        setState(() => _visitorTags = result);
+      },
+    );
   }
 
   /// 用户信息面板：字段与 Web 管理端弹窗一致（姓名/账号/手机号/邮箱/外部用户ID/项目/注册时间/备注）
@@ -1045,7 +1371,10 @@ class _ChatPageState extends State<ChatPage> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   s.userInfo,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const Divider(height: 1),
@@ -1054,19 +1383,75 @@ class _ChatPageState extends State<ChatPage> {
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
                   child: Column(
                     children: [
-                      _UserInfoRow(label: s.userName, value: detail.name.isEmpty ? '-' : detail.name),
-                      _UserInfoRow(label: s.userAccount, value: detail.account.isEmpty ? '-' : detail.account),
-                      _UserInfoRow(label: s.userPhone, value: detail.phone.isEmpty ? '-' : detail.phone),
-                      _UserInfoRow(label: s.userEmail, value: detail.email.isEmpty ? '-' : detail.email),
                       _UserInfoRow(
-                          label: s.userExternalId,
-                          value: detail.externalUserId.isEmpty ? '-' : detail.externalUserId),
-                      _UserInfoRow(label: s.userProject, value: _conv.projectName.isEmpty ? '-' : _conv.projectName),
+                        label: s.userName,
+                        value: detail.name.isEmpty ? '-' : detail.name,
+                      ),
                       _UserInfoRow(
-                          label: s.userRegTime,
-                          value: detail.createTime == null ? '-' : fmtDateTime(detail.createTime)),
+                        label: s.userAccount,
+                        value: detail.account.isEmpty ? '-' : detail.account,
+                      ),
+                      _UserInfoRow(
+                        label: s.userPhone,
+                        value: detail.phone.isEmpty ? '-' : detail.phone,
+                      ),
+                      _UserInfoRow(
+                        label: s.userEmail,
+                        value: detail.email.isEmpty ? '-' : detail.email,
+                      ),
+                      _UserInfoRow(
+                        label: s.userExternalId,
+                        value: detail.externalUserId.isEmpty
+                            ? '-'
+                            : detail.externalUserId,
+                      ),
+                      _UserInfoRow(
+                        label: s.userProject,
+                        value: _conv.projectName.isEmpty
+                            ? '-'
+                            : _conv.projectName,
+                      ),
+                      // 访问平台: 服务端按访客打开 H5 时的 User-Agent 识别, 未识别也占一行以表明不是漏字段
+                      _UserInfoRow(
+                        label: s.platformLabel,
+                        value: s.platformText(detail.platform),
+                      ),
+                      _UserInfoRow(
+                        label: s.userRegTime,
+                        value: detail.createTime == null
+                            ? '-'
+                            : fmtDateTime(detail.createTime),
+                      ),
                       if (detail.remark.isNotEmpty)
                         _UserInfoRow(label: s.userRemark, value: detail.remark),
+                      const SizedBox(height: 6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 92,
+                            child: Text(
+                              s.tags,
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.textMute,
+                                height: 1.6,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: _visitorTags.isEmpty
+                                ? const Text(
+                                    '-',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textMute,
+                                    ),
+                                  )
+                                : TagChips(tags: _visitorTags),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -1100,7 +1485,10 @@ class _ChatPageState extends State<ChatPage> {
                       _conv.displayTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1109,15 +1497,24 @@ class _ChatPageState extends State<ChatPage> {
                   if (_conv.aiPaused == 1 && _conv.status != 2) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.signal.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: AppColors.signal.withValues(alpha: 0.35)),
+                        border: Border.all(
+                          color: AppColors.signal.withValues(alpha: 0.35),
+                        ),
                       ),
                       child: Text(
                         s.aiPaused,
-                        style: const TextStyle(color: AppColors.signal, fontSize: 10, height: 1.2),
+                        style: const TextStyle(
+                          color: AppColors.signal,
+                          fontSize: 10,
+                          height: 1.2,
+                        ),
                       ),
                     ),
                   ],
@@ -1128,18 +1525,26 @@ class _ChatPageState extends State<ChatPage> {
                 '${_conv.userLabel} · ${_conv.projectName.isEmpty ? '-' : _conv.projectName}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: AppColors.textMute,
+                ),
               ),
             ],
           ),
         ),
         actions: [
+          // 打标签入口收进「...」菜单: 顶栏图标太多会挤掉标题
           // 仅开放接口创建的会话(userId>0)才有用户档案，与 Web 管理端的按钮显示条件一致
           if (_conv.userId > 0)
             IconButton(
               tooltip: s.userInfo,
               onPressed: _openUserInfo,
-              icon: const Icon(Icons.person_outline, size: 20, color: AppColors.textDim),
+              icon: const Icon(
+                Icons.person_outline,
+                size: 20,
+                color: AppColors.textDim,
+              ),
             ),
           if (_formMessages.isNotEmpty)
             IconButton(
@@ -1147,7 +1552,11 @@ class _ChatPageState extends State<ChatPage> {
               onPressed: _openFormSheet,
               icon: Badge(
                 label: Text('${_formMessages.length}'),
-                child: const Icon(Icons.assignment_outlined, size: 20, color: AppColors.textDim),
+                child: const Icon(
+                  Icons.assignment_outlined,
+                  size: 20,
+                  color: AppColors.textDim,
+                ),
               ),
             ),
           PopupMenuButton<String>(
@@ -1155,6 +1564,8 @@ class _ChatPageState extends State<ChatPage> {
             onSelected: (v) {
               if (v == 'refresh') {
                 _loadMessages(silent: true, follow: true);
+              } else if (v == 'tags') {
+                _openTagPicker();
               } else if (v == 'status') {
                 _toggleStatus();
               } else if (v == 'ai') {
@@ -1164,11 +1575,39 @@ class _ChatPageState extends State<ChatPage> {
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
+              // 仅开放接口创建的会话(userId>0)才能打标签: 客服/管理员可勾选, 仅管理员可管理
+              if (_conv.userId > 0)
+                PopupMenuItem<String>(
+                  value: 'tags',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _visitorTags.isEmpty
+                            ? Icons.label_outline
+                            : Icons.label,
+                        size: 17,
+                        color: _visitorTags.isEmpty
+                            ? AppColors.textDim
+                            : AppColors.accent,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _visitorTags.isEmpty
+                            ? s.setTags
+                            : '${s.setTags} (${_visitorTags.length})',
+                      ),
+                    ],
+                  ),
+                ),
               PopupMenuItem<String>(
                 value: 'refresh',
                 child: Row(
                   children: [
-                    const Icon(Icons.refresh, size: 17, color: AppColors.textDim),
+                    const Icon(
+                      Icons.refresh,
+                      size: 17,
+                      color: AppColors.textDim,
+                    ),
                     const SizedBox(width: 10),
                     Text(s.refreshMessages),
                   ],
@@ -1179,12 +1618,18 @@ class _ChatPageState extends State<ChatPage> {
                 child: Row(
                   children: [
                     Icon(
-                      _conv.status == 2 ? Icons.lock_open_outlined : Icons.lock_outline,
+                      _conv.status == 2
+                          ? Icons.lock_open_outlined
+                          : Icons.lock_outline,
                       size: 17,
                       color: AppColors.textDim,
                     ),
                     const SizedBox(width: 10),
-                    Text(_conv.status == 2 ? s.reopenConversation : s.closeConversation),
+                    Text(
+                      _conv.status == 2
+                          ? s.reopenConversation
+                          : s.closeConversation,
+                    ),
                   ],
                 ),
               ),
@@ -1193,8 +1638,11 @@ class _ChatPageState extends State<ChatPage> {
                   value: 'assign',
                   child: Row(
                     children: [
-                      const Icon(Icons.swap_horiz_outlined,
-                          size: 17, color: AppColors.textDim),
+                      const Icon(
+                        Icons.swap_horiz_outlined,
+                        size: 17,
+                        color: AppColors.textDim,
+                      ),
                       const SizedBox(width: 10),
                       Text(_conv.status == 1 ? s.reassign : s.assign),
                     ],
@@ -1205,7 +1653,9 @@ class _ChatPageState extends State<ChatPage> {
                 child: Row(
                   children: [
                     Icon(
-                      _conv.aiPaused == 1 ? Icons.play_circle_outline : Icons.pause_circle_outline,
+                      _conv.aiPaused == 1
+                          ? Icons.play_circle_outline
+                          : Icons.pause_circle_outline,
                       size: 17,
                       color: AppColors.textDim,
                     ),
@@ -1239,7 +1689,10 @@ class _ChatPageState extends State<ChatPage> {
                           borderRadius: BorderRadius.circular(999),
                           onTap: _jumpToLatest,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 7,
+                            ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1301,15 +1754,18 @@ class _ChatPageState extends State<ChatPage> {
         hint: AppStrings.current.noMessagesHint,
       );
     }
-    return ListView.builder(
-      controller: _scrollCtrl,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      itemCount: _messages.length + 1,
-      itemBuilder: (context, index) {
-        // 顶栏一行留给「加载更早消息」，消息本体往后错一位
-        if (index == 0) return _buildOlderHeader();
-        return _buildMessage(_messages[index - 1]);
-      },
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: _onMetricsNotification,
+      child: ListView.builder(
+        controller: _scrollCtrl,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        itemCount: _messages.length + 1,
+        itemBuilder: (context, index) {
+          // 顶栏一行留给「加载更早消息」，消息本体往后错一位
+          if (index == 0) return _buildOlderHeader();
+          return _buildMessage(_messages[index - 1]);
+        },
+      ),
     );
   }
 
@@ -1355,7 +1811,11 @@ class _ChatPageState extends State<ChatPage> {
           child: SelectableText(
             m.content,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 10.5, color: AppColors.textMute, height: 1.4),
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: AppColors.textMute,
+              height: 1.4,
+            ),
           ),
         ),
       );
@@ -1364,7 +1824,8 @@ class _ChatPageState extends State<ChatPage> {
     final mine = m.sentBy(_app.admin?.id ?? 0);
     final label = _senderLabel(m);
     final isFormData = m.msgType == 'form_data';
-    final maxBubbleWidth = MediaQuery.sizeOf(context).width * _maxTextWidthRatio / 100;
+    final maxBubbleWidth =
+        MediaQuery.sizeOf(context).width * _maxTextWidthRatio / 100;
 
     Widget content;
     if (isFormData) {
@@ -1379,7 +1840,9 @@ class _ChatPageState extends State<ChatPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
-        mainAxisAlignment: mine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: mine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!mine) ...[
@@ -1388,14 +1851,19 @@ class _ChatPageState extends State<ChatPage> {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: mine
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (m.isAi) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.signal.withOpacity(0.14),
                           borderRadius: BorderRadius.circular(4),
@@ -1417,13 +1885,19 @@ class _ChatPageState extends State<ChatPage> {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 10.5, color: AppColors.textDim),
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          color: AppColors.textDim,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       fmtTime(m.createTime),
-                      style: const TextStyle(fontSize: 9.5, color: AppColors.textMute),
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        color: AppColors.textMute,
+                      ),
                     ),
                   ],
                 ),
@@ -1443,7 +1917,9 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _bubble(ChatMessage m, bool mine) {
     final showOriginal = _showOriginal[m.id] == true;
-    final text = showOriginal ? m.secondaryText() : m.primaryText(_conv.userLabel);
+    final text = showOriginal
+        ? m.secondaryText()
+        : m.primaryText(_conv.userLabel);
     final isAi = m.isAi;
     final bg = mine
         ? AppColors.accent.withOpacity(0.13)
@@ -1514,19 +1990,29 @@ class _ChatPageState extends State<ChatPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.translate, size: 12, color: AppColors.accent),
+                  const Icon(
+                    Icons.translate,
+                    size: 12,
+                    color: AppColors.accent,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     showOriginal
                         ? AppStrings.current.showTranslation
                         : AppStrings.current.showOriginal,
-                    style: const TextStyle(fontSize: 10.5, color: AppColors.accent),
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      color: AppColors.accent,
+                    ),
                   ),
                   if (m.translatedLang.isNotEmpty) ...[
                     const SizedBox(width: 6),
                     Text(
                       m.translatedLang,
-                      style: const TextStyle(fontSize: 9.5, color: AppColors.textMute),
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        color: AppColors.textMute,
+                      ),
                     ),
                   ],
                 ],
@@ -1553,7 +2039,11 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.assignment_outlined, size: 14, color: AppColors.signal),
+              const Icon(
+                Icons.assignment_outlined,
+                size: 14,
+                color: AppColors.signal,
+              ),
               const SizedBox(width: 6),
               Text(
                 AppStrings.current.formSubmitNo('${m.formSeq}'),
@@ -1566,7 +2056,10 @@ class _ChatPageState extends State<ChatPage> {
               const Spacer(),
               Text(
                 fmtTime(m.createTime),
-                style: const TextStyle(fontSize: 9.5, color: AppColors.textMute),
+                style: const TextStyle(
+                  fontSize: 9.5,
+                  color: AppColors.textMute,
+                ),
               ),
             ],
           ),
@@ -1612,7 +2105,11 @@ class _ChatPageState extends State<ChatPage> {
     if (uri == null) {
       return SelectableText(
         text,
-        style: const TextStyle(fontSize: 12, color: AppColors.text, height: 1.5),
+        style: const TextStyle(
+          fontSize: 12,
+          color: AppColors.text,
+          height: 1.5,
+        ),
       );
     }
     return InkWell(
@@ -1647,10 +2144,19 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && mounted) {
-        showSnack(context, AppStrings.current.openLinkFailed('$uri'), error: true);
+        showSnack(
+          context,
+          AppStrings.current.openLinkFailed('$uri'),
+          error: true,
+        );
       }
     } catch (_) {
-      if (mounted) showSnack(context, AppStrings.current.openLinkFailed('$uri'), error: true);
+      if (mounted)
+        showSnack(
+          context,
+          AppStrings.current.openLinkFailed('$uri'),
+          error: true,
+        );
     }
   }
 
@@ -1678,7 +2184,11 @@ class _ChatPageState extends State<ChatPage> {
                     height: 64,
                     color: AppColors.panel2,
                     alignment: Alignment.center,
-                    child: const Icon(Icons.broken_image_outlined, size: 18, color: AppColors.textMute),
+                    child: const Icon(
+                      Icons.broken_image_outlined,
+                      size: 18,
+                      color: AppColors.textMute,
+                    ),
                   ),
                 ),
               ),
@@ -1686,7 +2196,9 @@ class _ChatPageState extends State<ChatPage> {
                 top: 2,
                 right: 2,
                 child: GestureDetector(
-                  onTap: _sending ? null : () => setState(() => _pendingImages.removeAt(i)),
+                  onTap: _sending
+                      ? null
+                      : () => setState(() => _pendingImages.removeAt(i)),
                   child: Container(
                     width: 18,
                     height: 18,
@@ -1695,7 +2207,11 @@ class _ChatPageState extends State<ChatPage> {
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.close, size: 12, color: Colors.white),
+                    child: const Icon(
+                      Icons.close,
+                      size: 12,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -1730,9 +2246,11 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  /// 微信式扩展面板：图片上传、翻译预览都收在「+」里
+  /// 微信式扩展面板：图片上传、翻译预览、邀请评价都收在「+」里
   Widget _attachPanel() {
     final s = AppStrings.current;
+    // 入口只要求至少配了一个市场地址；发送时按访客平台挑一条，平台未知才双链接兜底
+    final hasReviewLinks = _projectType == 1 && (_googlePlayUrl.isNotEmpty || _appStoreUrl.isNotEmpty);
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: ValueListenableBuilder<TextEditingValue>(
@@ -1760,6 +2278,16 @@ class _ChatPageState extends State<ChatPage> {
                   if (!_transOpen) _toggleTranslationPanel();
                 },
               ),
+              // 邀请评价：仅 APP 项目且后台至少填了一个市场地址才展示
+              if (hasReviewLinks) ...[
+                const SizedBox(width: 18),
+                _attachTile(
+                  icon: Icons.star_border_rounded,
+                  label: s.inviteReview,
+                  enabled: !_sending,
+                  onTap: _insertReviewCard,
+                ),
+              ],
             ],
           );
         },
@@ -1826,13 +2354,19 @@ class _ChatPageState extends State<ChatPage> {
               Expanded(
                 child: Text(
                   s.visitorWillSee,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textDim),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textDim,
+                  ),
                 ),
               ),
               if (_transLang.isNotEmpty) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.accent.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(4),
@@ -1840,7 +2374,10 @@ class _ChatPageState extends State<ChatPage> {
                   child: Text(
                     _transLang,
                     style: const TextStyle(
-                        fontSize: 9.5, color: AppColors.accent, height: 1.2),
+                      fontSize: 9.5,
+                      color: AppColors.accent,
+                      height: 1.2,
+                    ),
                   ),
                 ),
               ],
@@ -1859,7 +2396,11 @@ class _ChatPageState extends State<ChatPage> {
                 padding: EdgeInsets.zero,
                 tooltip: s.retranslate,
                 onPressed: _transLoading ? null : _runTranslationPreview,
-                icon: const Icon(Icons.refresh, size: 16, color: AppColors.textDim),
+                icon: const Icon(
+                  Icons.refresh,
+                  size: 16,
+                  color: AppColors.textDim,
+                ),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
@@ -1867,7 +2408,11 @@ class _ChatPageState extends State<ChatPage> {
                 padding: EdgeInsets.zero,
                 tooltip: s.close,
                 onPressed: _closeTranslation,
-                icon: const Icon(Icons.close, size: 16, color: AppColors.textMute),
+                icon: const Icon(
+                  Icons.close,
+                  size: 16,
+                  color: AppColors.textMute,
+                ),
               ),
             ],
           ),
@@ -1876,7 +2421,10 @@ class _ChatPageState extends State<ChatPage> {
               padding: const EdgeInsets.only(bottom: 6),
               child: Text(
                 s.translationSameLang,
-                style: const TextStyle(fontSize: 10.5, color: AppColors.textMute),
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: AppColors.textMute,
+                ),
               ),
             )
           else if (_transStale)
@@ -1926,12 +2474,19 @@ class _ChatPageState extends State<ChatPage> {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 12, color: AppColors.signal),
+                    const Icon(
+                      Icons.info_outline,
+                      size: 12,
+                      color: AppColors.signal,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         AppStrings.current.closedBarHint,
-                        style: const TextStyle(fontSize: 10.5, color: AppColors.signal),
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          color: AppColors.signal,
+                        ),
                       ),
                     ),
                   ],
@@ -1953,7 +2508,10 @@ class _ChatPageState extends State<ChatPage> {
                     decoration: InputDecoration(
                       hintText: AppStrings.current.replyHint,
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                     ),
                   ),
                 ),
@@ -1962,7 +2520,9 @@ class _ChatPageState extends State<ChatPage> {
                   valueListenable: _replyCtrl,
                   builder: (context, value, _) {
                     final canSend =
-                        (value.text.trim().isNotEmpty || _pendingImages.isNotEmpty) && !_sending;
+                        (value.text.trim().isNotEmpty ||
+                            _pendingImages.isNotEmpty) &&
+                        !_sending;
                     return SizedBox(
                       width: 44,
                       height: 44,
@@ -2030,7 +2590,10 @@ class _UserInfoRowState extends State<_UserInfoRow> {
       if (mounted) setState(() => _copied = false);
     });
     SemanticsService.sendAnnouncement(
-        View.of(context), AppStrings.current.copied, TextDirection.ltr);
+      View.of(context),
+      AppStrings.current.copied,
+      TextDirection.ltr,
+    );
   }
 
   @override
@@ -2045,7 +2608,11 @@ class _UserInfoRowState extends State<_UserInfoRow> {
             width: 96,
             child: Text(
               widget.label,
-              style: const TextStyle(fontSize: 12, color: AppColors.textDim, height: 1.5),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textDim,
+                height: 1.5,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -2063,16 +2630,23 @@ class _UserInfoRowState extends State<_UserInfoRow> {
                             child: Text(
                               widget.value,
                               style: const TextStyle(
-                                  fontSize: 12, color: AppColors.text, height: 1.5),
+                                fontSize: 12,
+                                color: AppColors.text,
+                                height: 1.5,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Icon(
-                              _copied ? Icons.check_rounded : Icons.copy_rounded,
+                              _copied
+                                  ? Icons.check_rounded
+                                  : Icons.copy_rounded,
                               size: 13,
-                              color: _copied ? AppColors.ok : AppColors.textMute,
+                              color: _copied
+                                  ? AppColors.ok
+                                  : AppColors.textMute,
                             ),
                           ),
                         ],
@@ -2081,7 +2655,11 @@ class _UserInfoRowState extends State<_UserInfoRow> {
                   )
                 : Text(
                     widget.value,
-                    style: const TextStyle(fontSize: 12, color: AppColors.text, height: 1.5),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.text,
+                      height: 1.5,
+                    ),
                   ),
           ),
         ],
