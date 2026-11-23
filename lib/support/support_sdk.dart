@@ -35,7 +35,9 @@ class SupportSdk {
     if (cached != null &&
         cached.isNotEmpty &&
         prefs.getString(_uidKey) == admin.id.toString()) {
-      return cached;
+      // A link cached by an older build carries no require_info, and the H5 now
+      // defaults the pre-chat form on, so normalize the cached value too.
+      return _noGate(cached);
     }
     try {
       final url = await _createConv(admin, prefs);
@@ -62,6 +64,12 @@ class SupportSdk {
     await prefs.remove(_convKeyKey);
   }
 
+  /// The visitor H5 asks for a name/email before starting a chat by default
+  /// (require_info). Agents are already signed in here, so the embedded page
+  /// must opt out explicitly instead of relying on the H5 default.
+  static String _noGate(String url) =>
+      url.contains('require_info=') ? url : '$url&require_info=0';
+
   Future<String?> _createConv(AdminUser admin, SharedPreferences prefs) async {
     final userInfo = <String, dynamic>{
       // Server-side user_info is "overwrite only when present": send non-empty
@@ -69,6 +77,7 @@ class SupportSdk {
       if (admin.nickname.isNotEmpty || admin.name.isNotEmpty)
         'name': admin.nickname.isNotEmpty ? admin.nickname : admin.name,
       if (admin.account.isNotEmpty) 'account': admin.account,
+      if (admin.account.isNotEmpty) 'email': admin.account,
       if (admin.avatar.isNotEmpty) 'avatar': admin.avatar,
     };
     final resp = await Dio(
@@ -104,8 +113,9 @@ class SupportSdk {
       return null;
     }
     final data = body['data'];
-    final url = (data is Map ? data['chat_url'] : null)?.toString() ?? '';
-    if (url.isEmpty) return null;
+    final raw = (data is Map ? data['chat_url'] : null)?.toString() ?? '';
+    if (raw.isEmpty) return null;
+    final url = _noGate(raw);
     await prefs.setString(_urlKey, url);
     await prefs.setString(_uidKey, admin.id.toString());
     final convKey = (data['conv_key'] ?? '').toString();

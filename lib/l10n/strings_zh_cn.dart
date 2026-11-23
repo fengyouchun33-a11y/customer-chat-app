@@ -117,6 +117,14 @@ const Map<String, String> zhCnStrings = {
   'assignOffDuty': '非服务时段',
   'agentLoad': '接待 {0} 条',
   'assignDone': '已指派给 {0}',
+  'visitorLang': '访客语言',
+  'visitorLangTip':
+      '客服回复与欢迎语会翻译成该语言；在此设置后会锁定，访客端不会再自动覆盖。',
+  'visitorLangTipLocked':
+      '该会话语言已由客服设置并锁定，访客端不会自动改回；可再次选择以更新。',
+  'visitorLangDone': '访客语言已设为 {0}',
+  'visitorLangSearch': '搜索语言',
+  'visitorLangEmpty': '未找到匹配的语言',
   'confirm': '确定',
   'anonymous': '匿名用户',
 

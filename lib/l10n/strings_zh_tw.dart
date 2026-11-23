@@ -117,6 +117,14 @@ const Map<String, String> zhTwStrings = {
   'assignOffDuty': '非服務時段',
   'agentLoad': '接待 {0} 條',
   'assignDone': '已指派給 {0}',
+  'visitorLang': '訪客語言',
+  'visitorLangTip':
+      '客服回覆與歡迎訊息會翻譯成該語言；在此設定後會鎖定，訪客端不會再自動覆蓋。',
+  'visitorLangTipLocked':
+      '該交談語言已由客服設定並鎖定，訪客端不會自動改回；可再次選擇以更新。',
+  'visitorLangDone': '訪客語言已設為 {0}',
+  'visitorLangSearch': '搜尋語言',
+  'visitorLangEmpty': '找不到符合的語言',
   'confirm': '確定',
   'anonymous': '匿名使用者',
 

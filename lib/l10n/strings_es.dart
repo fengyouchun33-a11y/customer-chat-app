@@ -124,6 +124,14 @@ const Map<String, String> esStrings = {
   'assignOffDuty': 'Fuera de horario',
   'agentLoad': '{0} activos',
   'assignDone': 'Asignado a {0}',
+  'visitorLang': 'Idioma del visitante',
+  'visitorLangTip':
+      'Las respuestas del agente y el mensaje de bienvenida se traducen a este idioma. Al definirlo aquí se bloquea, y la parte del visitante ya no lo sobrescribirá.',
+  'visitorLangTipLocked':
+      'Un agente definió y bloqueó este idioma: la parte del visitante no lo cambiará automáticamente. Puedes definirlo de nuevo para actualizarlo.',
+  'visitorLangDone': 'Idioma del visitante establecido en {0}',
+  'visitorLangSearch': 'Buscar idiomas',
+  'visitorLangEmpty': 'Ningún idioma coincidente',
   'confirm': 'Confirmar',
   'anonymous': 'Usuario anónimo',
 

@@ -123,6 +123,14 @@ const Map<String, String> deStrings = {
   'assignOffDuty': 'Außerhalb der Dienstzeit',
   'agentLoad': '{0} aktiv',
   'assignDone': '{0} zugewiesen',
+  'visitorLang': 'Sprache des Besuchers',
+  'visitorLangTip':
+      'Agentenantworten und die Begrüßungsnachricht werden in diese Sprache übersetzt. Nach dem Festlegen hier wird sie gesperrt und von der Besucherseite nicht mehr überschrieben.',
+  'visitorLangTipLocked':
+      'Diese Sprache wurde von einem Agenten festgelegt und gesperrt: Die Besucherseite ändert sie nicht automatisch. Sie können sie erneut festlegen, um sie zu aktualisieren.',
+  'visitorLangDone': 'Sprache des Besuchers auf {0} festgelegt',
+  'visitorLangSearch': 'Sprachen suchen',
+  'visitorLangEmpty': 'Keine passende Sprache',
   'confirm': 'Bestätigen',
   'anonymous': 'Anonymer Benutzer',
 

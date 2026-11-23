@@ -117,6 +117,14 @@ const Map<String, String> koStrings = {
   'assignOffDuty': '근무 외',
   'agentLoad': '대응 {0} 건',
   'assignDone': '{0}에게 배정되었습니다',
+  'visitorLang': '방문자 언어',
+  'visitorLangTip':
+      '상담원 답변과 환영 메시지가 이 언어로 번역됩니다. 여기서 설정하면 잠겨 방문자 쪽에서 자동으로 덮어쓰지 않습니다.',
+  'visitorLangTipLocked':
+      '이 언어는 상담원이 설정하여 잠긴 상태로, 방문자 쪽에서 자동으로 변경되지 않습니다. 다시 설정하여 업데이트할 수 있습니다.',
+  'visitorLangDone': '방문자 언어를 {0}(으)로 설정했습니다',
+  'visitorLangSearch': '언어 검색',
+  'visitorLangEmpty': '일치하는 언어가 없습니다',
   'confirm': '확인',
   'anonymous': '익명 사용자',
 

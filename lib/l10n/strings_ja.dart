@@ -117,6 +117,14 @@ const Map<String, String> jaStrings = {
   'assignOffDuty': '時間帯外',
   'agentLoad': '対応 {0} 件',
   'assignDone': '{0} に割り当てました',
+  'visitorLang': '訪問者の言語',
+  'visitorLangTip':
+      'スタッフの返信とウェルカムメッセージはこの言語に翻訳されます。ここで設定するとロックされ、訪問者側で自動的に上書きされません。',
+  'visitorLangTipLocked':
+      'この言語はスタッフにより設定・ロックされており、訪問者側では自動的に変更されません。再度設定して更新できます。',
+  'visitorLangDone': '訪問者の言語を{0}に設定しました',
+  'visitorLangSearch': '言語を検索',
+  'visitorLangEmpty': '該当する言語がありません',
   'confirm': '決定',
   'anonymous': '匿名ユーザー',
 

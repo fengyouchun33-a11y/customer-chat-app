@@ -18,6 +18,8 @@ import '../services/notification_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
+import '../utils/visitor_languages.dart';
+import '../utils/lang_display_names.dart';
 import '../widgets/common.dart';
 import '../widgets/tag_picker.dart';
 
@@ -75,6 +77,12 @@ class _ChatPageState extends State<ChatPage> {
   String _appStoreUrl = '';
   // 访客访问平台（服务端按 H5 UA 识别，messages 接口附带）：邀请评价据此只发一条链接
   String _visitorPlatform = '';
+
+  // Visitor language: read from conv.lang / conv.lang_locked carried by the
+  // messages API. Agents can set it manually; once locked (lang_locked=1) the
+  // visitor side (H5 browser language / open API) can no longer overwrite it.
+  String _visitorLang = '';
+  bool _langLocked = false;
 
   List<ChatMessage> _messages = const [];
   bool _loading = true;
@@ -590,6 +598,9 @@ class _ChatPageState extends State<ChatPage> {
             aiPaused: asInt(conv['ai_paused'], _conv.aiPaused),
             agentId: asInt(conv['agent_id'], _conv.agentId),
           );
+          // lang/lang_locked 由服务端 select * 带回; 老库无该列时按未锁定处理
+          _visitorLang = asTrimString(conv['lang']);
+          _langLocked = asInt(conv['lang_locked'], 0) == 1;
         }
         // 附带访客标签: 服务端无此字段时保留上一次结果(例如轮询早期版本)
         final tagRaw = m['visitor_tags'];
@@ -1319,6 +1330,255 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  // Visitor-language picker: the agent sets chat_conversation.lang manually and
+  // the server locks it (lang_locked=1), so the visitor side (H5 browser language
+  // / open API) can no longer overwrite it. Options mirror server WELCOME_LANGS;
+  // labels use native names so they stay correct regardless of the agent's UI language.
+  Future<void> _openLangSheet() async {
+    if (_actionBusy) return;
+    final s = AppStrings.current;
+    final api = context.read<AppState>().api;
+    // ~100 translation-target languages (kept in sync with server app/lib/langs.js).
+    // The second column is localized to the App UI language; sort/search follow
+    // that localized name (falling back to English for sparse entries). This only
+    // sets the visitor reply/welcome translation target, not the App UI language.
+    final uiCode = s.code;
+    String displayName(VisitorLang l) =>
+        visitorLangLocalized(l.code, uiCode).toLowerCase();
+    final all = <VisitorLang>[
+      ...kVisitorLangs
+    ]..sort((a, b) => displayName(a).compareTo(displayName(b)));
+    String pick =
+        kVisitorLangs.any((l) => l.code == _visitorLang) ? _visitorLang : '';
+    String query = '';
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetCtx) {
+        bool submitting = false;
+        return StatefulBuilder(
+          builder: (context, setSheet) {
+            final q = query.trim().toLowerCase();
+            final shown = q.isEmpty
+                ? all
+                : all
+                    .where((l) =>
+                        displayName(l).contains(q) ||
+                        l.english.toLowerCase().contains(q) ||
+                        l.native.toLowerCase().contains(q) ||
+                        l.code.contains(q))
+                    .toList();
+            final mq = MediaQuery.of(sheetCtx);
+            return SafeArea(
+              child: Padding(
+                padding:
+                    EdgeInsets.fromLTRB(16, 8, 16, 12 + mq.viewInsets.bottom),
+                child: SizedBox(
+                  height: mq.size.height * 0.78,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.borderStrong,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        s.visitorLang,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.text,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _langLocked
+                            ? s.visitorLangTipLocked
+                            : s.visitorLangTip,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.textDim,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        // No external controller: search text is tracked via
+                        // onChanged only. A controller created here and disposed
+                        // after the await would be used during the sheet's exit
+                        // animation (TextField still mounted) -> "used after being
+                        // disposed". The internal controller is disposed correctly.
+                        textInputAction: TextInputAction.search,
+                        onChanged: (v) => setSheet(() => query = v),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: s.visitorLangSearch,
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: shown.isEmpty
+                            ? Center(
+                                child: Text(
+                                  s.visitorLangEmpty,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textDim,
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: shown.length,
+                                itemBuilder: (context, i) {
+                                  final e = shown[i];
+                                  final selected = pick == e.code;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: InkWell(
+                                      onTap: () =>
+                                          setSheet(() => pick = e.code),
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: selected
+                                              ? AppColors.accent.withOpacity(
+                                                  0.12)
+                                              : Colors.transparent,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: selected
+                                                ? AppColors.accent.withOpacity(
+                                                    0.4)
+                                                : AppColors.border,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                '${e.native}  ·  ${visitorLangLocalized(e.code, uiCode)}',
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  color: AppColors.text,
+                                                ),
+                                              ),
+                                            ),
+                                            if (selected)
+                                              const Icon(
+                                                Icons.check,
+                                                size: 17,
+                                                color: AppColors.accent,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: submitting
+                                  ? null
+                                  : () => Navigator.pop(sheetCtx),
+                              child: Text(s.cancel),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: submitting || pick.isEmpty
+                                  ? null
+                                  : () async {
+                                      setSheet(() => submitting = true);
+                                      try {
+                                        await api.post(
+                                          '/admin/conversation/set-lang',
+                                          data: {
+                                            'conv_key': _conv.convKey,
+                                            'lang': pick,
+                                          },
+                                        );
+                                        if (mounted) {
+                                          setState(() {
+                                            _visitorLang = pick;
+                                            _langLocked = true;
+                                          });
+                                        }
+                                        if (sheetCtx.mounted) {
+                                          Navigator.pop(sheetCtx);
+                                        }
+                                        if (mounted) {
+                                          showSnack(
+                                            context,
+                                            s.visitorLangDone(
+                                              visitorLangNative(pick),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (sheetCtx.mounted) {
+                                          setSheet(() => submitting = false);
+                                          showSnack(
+                                            sheetCtx,
+                                            e.toString(),
+                                            error: true,
+                                          );
+                                        }
+                                      }
+                                    },
+                              child: submitting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(s.confirm),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // 默认选在线且接待量最少的一位（与服务端自动分配同优先级），没人在线退到离线负载最少
   int _defaultAssignPick(List<Map<String, dynamic>> list) {
     int best = 0, bestLoad = 1 << 30, bestId = 1 << 30;
@@ -1776,6 +2036,8 @@ class _ChatPageState extends State<ChatPage> {
                 _toggleAi();
               } else if (v == 'assign') {
                 _openAssignSheet();
+              } else if (v == 'lang') {
+                _openLangSheet();
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
@@ -1865,6 +2127,28 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                     const SizedBox(width: 10),
                     Text(_conv.aiPaused == 1 ? s.resumeAi : s.pauseAi),
+                  ],
+                ),
+              ),
+              // Visitor language: agent sets it manually; server locks it so the
+              // visitor side can no longer overwrite the choice.
+              PopupMenuItem<String>(
+                value: 'lang',
+                child: Row(
+                  children: [
+                    Icon(
+                      _langLocked
+                          ? Icons.lock_outline
+                          : Icons.translate,
+                      size: 17,
+                      color: _langLocked ? AppColors.accent : AppColors.textDim,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _visitorLang.isEmpty
+                          ? s.visitorLang
+                          : '${s.visitorLang} · ${visitorLangNative(_visitorLang)}',
+                    ),
                   ],
                 ),
               ),

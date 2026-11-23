@@ -122,6 +122,14 @@ const Map<String, String> enStrings = {
   'assignOffDuty': 'Off-duty',
   'agentLoad': '{0} active',
   'assignDone': 'Assigned to {0}',
+  'visitorLang': 'Visitor language',
+  'visitorLangTip':
+      'Agent replies and the welcome message are translated into this language. Once set here it is locked, so the visitor side will no longer overwrite it.',
+  'visitorLangTipLocked':
+      'This language was set by an agent and is locked: the visitor side will not change it automatically. You can set it again to update.',
+  'visitorLangDone': 'Visitor language set to {0}',
+  'visitorLangSearch': 'Search languages',
+  'visitorLangEmpty': 'No matching language',
   'confirm': 'Confirm',
   'anonymous': 'Anonymous',
 

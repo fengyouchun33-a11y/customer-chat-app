@@ -276,6 +276,14 @@ class AppStrings {
   String assignDone(String n) => _fmt('assignDone', [n]);
   String get confirm => _t('confirm');
 
+  // 访客语言（客服手工设置并锁定，访客端不再自动覆盖）
+  String get visitorLang => _t('visitorLang');
+  String get visitorLangTip => _t('visitorLangTip');
+  String get visitorLangTipLocked => _t('visitorLangTipLocked');
+  String visitorLangDone(String n) => _fmt('visitorLangDone', [n]);
+  String get visitorLangSearch => _t('visitorLangSearch');
+  String get visitorLangEmpty => _t('visitorLangEmpty');
+
   // 聊天
   String get senderAgent => _t('senderAgent');
   String get senderAi => _t('senderAi');

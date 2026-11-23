@@ -122,6 +122,14 @@ const Map<String, String> arStrings = {
   'assignOffDuty': 'خارج الدوام',
   'agentLoad': '{0} نشط',
   'assignDone': 'تم الإسناد إلى {0}',
+  'visitorLang': 'لغة الزائر',
+  'visitorLangTip':
+      'يتم ترجمة ردود الموظف ورسالة الترحيب إلى هذه اللغة. بمجرد تعيينها هنا يتم قفلها، لذا لن يستبدلها جانب الزائر تلقائيًا.',
+  'visitorLangTipLocked':
+      'عيّن موظف هذه اللغة وقفلها: لن يغيّرها جانب الزائر تلقائيًا. يمكنك تعيينها مرة أخرى للتحديث.',
+  'visitorLangDone': 'تم تعيين لغة الزائر إلى {0}',
+  'visitorLangSearch': 'البحث عن لغة',
+  'visitorLangEmpty': 'لا توجد لغة مطابقة',
   'confirm': 'تأكيد',
   'anonymous': 'مستخدم مجهول',
 

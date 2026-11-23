@@ -123,6 +123,14 @@ const Map<String, String> ptStrings = {
   'assignOffDuty': 'Fora do horário',
   'agentLoad': '{0} ativos',
   'assignDone': 'Atribuído a {0}',
+  'visitorLang': 'Idioma do visitante',
+  'visitorLangTip':
+      'As respostas do atendente e a mensagem de boas-vindas são traduzidas para este idioma. Ao definir aqui, ele fica bloqueado e o lado do visitante não o substituirá mais.',
+  'visitorLangTipLocked':
+      'Um atendente definiu e bloqueou este idioma: o lado do visitante não o alterará automaticamente. Você pode defini-lo novamente para atualizar.',
+  'visitorLangDone': 'Idioma do visitante definido como {0}',
+  'visitorLangSearch': 'Pesquisar idiomas',
+  'visitorLangEmpty': 'Nenhum idioma correspondente',
   'confirm': 'Confirmar',
   'anonymous': 'Usuário anônimo',
 

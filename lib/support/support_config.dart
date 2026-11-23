@@ -20,9 +20,11 @@ class SupportConfig {
   static const String appKey = '9eaa7bbcbc2dcf353fef8ecb88316de1';
 
   /// Anonymous fallback link when the fixed conversation cannot be resolved
-  /// (a new conversation on every entry; only guarantees a non-blank screen)
+  /// (a new conversation on every entry; only guarantees a non-blank screen).
+  /// require_info=0: the visitor H5 asks for a name/email by default, but agents
+  /// here are already signed in, so the support entry must stay one tap away.
   static String get fallbackUrl =>
-      '$apiBase/public/chat.html?appId=$appId&header=0';
+      '$apiBase/public/chat.html?appId=$appId&header=0&require_info=0';
 
   /// SDK refuses to start while AppID/AppKey are not configured
   static bool get isConfigured => appId.isNotEmpty && appKey.isNotEmpty;

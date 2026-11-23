@@ -126,6 +126,14 @@ const Map<String, String> frStrings = {
   'assignOffDuty': 'Hors plage',
   'agentLoad': '{0} en cours',
   'assignDone': 'Attribué à {0}',
+  'visitorLang': 'Langue du visiteur',
+  'visitorLangTip':
+      'Les réponses de l’agent et le message d’accueil sont traduits dans cette langue. Une fois définie ici, elle est verrouillée et le côté visiteur ne l’écrasera plus.',
+  'visitorLangTipLocked':
+      'Cette langue a été définie et verrouillée par un agent : le côté visiteur ne la modifiera pas automatiquement. Vous pouvez la redéfinir pour la mettre à jour.',
+  'visitorLangDone': 'Langue du visiteur définie sur {0}',
+  'visitorLangSearch': 'Rechercher des langues',
+  'visitorLangEmpty': 'Aucune langue correspondante',
   'confirm': 'Confirmer',
   'anonymous': 'Utilisateur anonyme',
 
