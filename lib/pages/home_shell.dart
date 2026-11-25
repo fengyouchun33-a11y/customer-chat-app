@@ -21,7 +21,7 @@ import 'stats_page.dart';
 import 'tenant_select_page.dart';
 
 /// 工作台外壳：底部 Tab（会话 / 联系人 / 统计 / 更多），顶栏放租户切换与退出。
-/// 联系人需要租户管理员权限（/admin/user/list 带 requireAdmin），普通客服不展示该 tab。
+/// 联系人与 Web 后台同口径对全员开放：服务端 /admin/user/list 按客服授权项目收敛数据范围。
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -219,8 +219,6 @@ class _HomeShellState extends State<HomeShell> {
     final s = AppStrings.of(context);
     final unread = state.unreadTotal;
     final tenantName = state.tenant?.companyName ?? s.noTenantSelected;
-    // 联系人 tab 仅管理员可见；角色可能随 profile 刷新变化，索引需钳制到当前页签数
-    final showContacts = state.admin?.isAdmin == true;
 
     return Scaffold(
       appBar: AppBar(
@@ -294,16 +292,16 @@ class _HomeShellState extends State<HomeShell> {
         ],
       ),
       body: IndexedStack(
-        index: _clampTab(_tab, showContacts),
-        children: [
-          const ConversationsPage(),
-          if (showContacts) const ContactsPage(),
-          const StatsPage(),
-          const MorePage(),
+        index: _clampTab(_tab),
+        children: const [
+          ConversationsPage(),
+          ContactsPage(),
+          StatsPage(),
+          MorePage(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _clampTab(_tab, showContacts),
+        currentIndex: _clampTab(_tab),
         onTap: (i) => setState(() => _tab = i),
         items: [
           BottomNavigationBarItem(
@@ -319,12 +317,11 @@ class _HomeShellState extends State<HomeShell> {
             ),
             label: s.tabConversations,
           ),
-          if (showContacts)
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.people_outline),
-              activeIcon: const Icon(Icons.people),
-              label: s.tabContacts,
-            ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.people_outline),
+            activeIcon: const Icon(Icons.people),
+            label: s.tabContacts,
+          ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.insights_outlined),
             activeIcon: const Icon(Icons.insights),
@@ -339,11 +336,9 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  /// Tab index clamp. MorePage is always the last tab, so the max index is 3
-  /// for admins (conv/contacts/stats/more) and 2 for plain agents
-  /// (conv/stats/more) when the contacts tab is hidden.
-  int _clampTab(int tab, bool showContacts) {
-    final max = showContacts ? 3 : 2;
-    return tab > max ? max : (tab < 0 ? 0 : tab);
+  /// Tab index clamp. The bar is a fixed 4 tabs (conv/contacts/stats/more),
+  /// MorePage always last; clamping only guards a stale out-of-range index.
+  int _clampTab(int tab) {
+    return tab > 3 ? 3 : (tab < 0 ? 0 : tab);
   }
 }

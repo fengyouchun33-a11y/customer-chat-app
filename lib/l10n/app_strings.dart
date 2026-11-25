@@ -364,7 +364,7 @@ class AppStrings {
   String get userInfoLoadFailed => _t('userInfoLoadFailed');
   String get copied => _t('copied');
 
-  // 联系人（工作台 tab，仅租户管理员可见，与 Web 后台 UserList 同口径）
+  // 联系人（工作台 tab，与 Web 后台同口径全员可见，客服数据范围由服务端按授权项目收敛）
   String get tabContacts => _t('tabContacts');
   String get contactsSearchHint => _t('contactsSearchHint');
   String get contactsSyncTip => _t('contactsSyncTip');

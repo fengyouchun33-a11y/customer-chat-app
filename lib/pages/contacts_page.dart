@@ -15,8 +15,8 @@ import '../widgets/tag_picker.dart';
 import 'chat_page.dart';
 
 /// 联系人页：与 Web 管理端 UserList 同口径
-/// - 关键词 / 项目筛选，pageSize=20 分页；数据来自 /admin/user/list（仅租户管理员可见此 tab）
-/// - 联系人由开放接口 user_info 同步创建，本页只维护展示资料（编辑/删除/打开会话）
+/// - 关键词 / 项目筛选，pageSize=20 分页；数据来自 /admin/user/list（客服可进, 服务端按授权项目收敛数据范围）
+/// - 联系人由开放接口 user_info 同步创建，本页只维护展示资料（编辑仅管理员/打开会话）
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
 
@@ -748,29 +748,43 @@ class _ContactsPageState extends State<ContactsPage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.tonal(
-                        onPressed: () {
-                          Navigator.pop(sheetCtx);
-                          _openConversation(c);
-                        },
-                        child: Text(s.openConversation),
+                // 编辑仅管理员: 服务端 user/update 本身带 requireAdmin, 这里不让客服点了才报错;
+                // 客服看得到档案但改不了, 「打开会话」单独占满整行
+                if (context.read<AppState>().admin?.isAdmin == true)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: () {
+                            Navigator.pop(sheetCtx);
+                            _openConversation(c);
+                          },
+                          child: Text(s.openConversation),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(sheetCtx);
-                          _showEditSheet(c);
-                        },
-                        child: Text(s.editContact),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(sheetCtx);
+                            _showEditSheet(c);
+                          },
+                          child: Text(s.editContact),
+                        ),
                       ),
+                    ],
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonal(
+                      onPressed: () {
+                        Navigator.pop(sheetCtx);
+                        _openConversation(c);
+                      },
+                      child: Text(s.openConversation),
                     ),
-                  ],
-                ),
+                  ),
               ],
             ),
           ),
