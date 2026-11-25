@@ -55,6 +55,10 @@ class _ChatPageState extends State<ChatPage> {
   bool _stickBottom = false;
   // 上一次看到的内容高度: 只在 maxScrollExtent 真的变化时补跳, 不跟用户手势打架
   double _lastMaxExtent = 0;
+  // 手指正在拖动消息列表: 期间禁止吸底补跳。iOS 上键盘弹起后首帧拖拽会伴随
+  // 可选中文段重排触发一次 ScrollMetricsNotification, 若此时 jumpTo 会把列表抓回
+  // 底部、直接吞掉用户这次滚动手势(表现为开着键盘列表滑不动)。
+  bool _userDragging = false;
   final Map<int, bool> _showOriginal = {};
   final ImagePicker _picker = ImagePicker();
   // 已选但还没发送的图片：发送时与文字拼成同一条消息（与 H5 发图口径一致）
@@ -774,16 +778,33 @@ class _ChatPageState extends State<ChatPage> {
       _loadOlder();
   }
 
+  /// 追踪手指拖拽：带 dragDetails 的滚动开始即为用户手势，滚动结束解除。
+  /// 期间 _onMetricsNotification 不再补跳，避免与拖拽打架（见 _userDragging 注释）。
+  bool _onScrollNotification(ScrollNotification n) {
+    if (n is ScrollStartNotification && n.dragDetails != null) {
+      _userDragging = true;
+    } else if (n is ScrollEndNotification) {
+      _userDragging = false;
+    }
+    return false;
+  }
+
   /// 图片等异步内容撑高列表后, 在吸底状态下补跳到底部
   /// (_scrollToBottom 只重试 10 帧, 盖不住几百毫秒后才落地的网络图)
   bool _onMetricsNotification(ScrollMetricsNotification n) {
+    // 只认消息列表自身的纵向滚动位置, 忽略列表项内嵌的横向可滚动(代码块等)
+    if (n.metrics.axis != Axis.vertical) return false;
+    // 手指拖拽期间不补跳, 否则会把这次拖拽抓回底部、表现为列表滑不动
+    if (_userDragging) return false;
     // 纯滑动的 metrics 变化(高度没变)不响应, 免得拖拽第一帧被 jumpTo 抓回底部
     final extent = n.metrics.maxScrollExtent;
     final resized = (extent - _lastMaxExtent).abs() > 0.5;
     _lastMaxExtent = extent;
     if (!resized || !_stickBottom) return false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_stickBottom || !_scrollCtrl.hasClients) return;
+      if (!mounted || !_stickBottom || _userDragging || !_scrollCtrl.hasClients) {
+        return;
+      }
       final pos = _scrollCtrl.position;
       if (pos.maxScrollExtent - pos.pixels > 0.5) pos.jumpTo(pos.maxScrollExtent);
     });
@@ -2242,17 +2263,20 @@ class _ChatPageState extends State<ChatPage> {
         hint: AppStrings.current.noMessagesHint,
       );
     }
-    return NotificationListener<ScrollMetricsNotification>(
-      onNotification: _onMetricsNotification,
-      child: ListView.builder(
-        controller: _scrollCtrl,
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        itemCount: _messages.length + 1,
-        itemBuilder: (context, index) {
-          // 顶栏一行留给「加载更早消息」，消息本体往后错一位
-          if (index == 0) return _buildOlderHeader();
-          return _buildMessage(_messages[index - 1]);
-        },
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScrollNotification,
+      child: NotificationListener<ScrollMetricsNotification>(
+        onNotification: _onMetricsNotification,
+        child: ListView.builder(
+          controller: _scrollCtrl,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          itemCount: _messages.length + 1,
+          itemBuilder: (context, index) {
+            // 顶栏一行留给「加载更早消息」，消息本体往后错一位
+            if (index == 0) return _buildOlderHeader();
+            return _buildMessage(_messages[index - 1]);
+          },
+        ),
       ),
     );
   }
